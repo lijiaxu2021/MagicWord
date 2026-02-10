@@ -64,10 +64,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.clickable
+
 @Composable
 fun TestScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    var showHistory by remember { mutableStateOf(false) }
+    var showHistoryScreen by remember { mutableStateOf(false) } // Use full screen for history
     val tabs = listOf("选择题", "拼写")
     
     val context = LocalContext.current
@@ -82,21 +88,12 @@ fun TestScreen() {
     // Use testCandidates if available (Testing Selected), otherwise allWords (Testing Library)
     val words = testCandidates ?: allWords
 
-    // State persistence using rememberSaveable for basic quiz state across tabs
-    // Note: Ideally this should be in a ViewModel, but rememberSaveable works for simple cases
-    // where we want to survive configuration changes and simple composition changes.
-    // However, for HorizontalPager in MainScreen, state might be lost if page is destroyed.
-    // Given user complaint "leaving resets", we need stronger persistence.
-    // Since we are reusing LibraryViewModel, let's keep it simple with rememberSaveable which survives process death too.
-    
     val choiceQuizState = rememberSaveable(saver = QuizState.Saver) {
         mutableStateOf(QuizState())
     }
     
-    // Listen for Test Type changes from ViewModel (triggered by Test Selected)
     val testType by viewModel.testType.collectAsState()
     
-    // Auto-switch tab if Test Type changes (and it's a test session)
     LaunchedEffect(testType) {
         val targetIndex = when(testType) {
             LibraryViewModel.TestType.CHOICE -> 0
@@ -107,11 +104,13 @@ fun TestScreen() {
         }
     }
     
-    if (showHistory) {
-        TestHistoryDialog(
+    // FULL SCREEN HISTORY VIEW
+    if (showHistoryScreen) {
+        TestHistoryScreen(
             viewModel = viewModel,
-            onDismiss = { showHistory = false }
+            onBack = { showHistoryScreen = false }
         )
+        return // Exit TestScreen composable when showing history
     }
 
     // DB Persistence for Test State
@@ -136,10 +135,6 @@ fun TestScreen() {
                      // Sync tab
                      if (selectedTab != 0) selectedTab = 0
                  } 
-                 // Restore Spell Mode (if we had separate state, but we can reuse logic or added persist for Spell)
-                 // For now, only Choice mode is fully using QuizState object in this file structure, 
-                 // but we should apply similar logic to Spell mode or unify.
-                 // Given user urgency, let's focus on Choice mode restoration which seems to be the main complaint.
             }
         }
     }
@@ -179,7 +174,7 @@ fun TestScreen() {
             }
             
             IconButton(
-                onClick = { showHistory = true },
+                onClick = { showHistoryScreen = true },
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 Icon(Icons.Filled.History, "Test History")
@@ -210,11 +205,16 @@ fun TestScreen() {
                         totalQuestions = words.size,
                         correctCount = finalState.score,
                         testType = "CHOICE",
-                        durationSeconds = 0,
+                        durationSeconds = 0, // Need to track duration
                         questionsJson = Gson().toJson(results)
                     )
                     viewModel.saveTestResult(history)
                     viewModel.clearTestSession()
+                    
+                    // Update Word Stats for all results
+                    results.forEach { result ->
+                        viewModel.updateWordStats(result.wordId, result.isCorrect)
+                    }
                 }
             )
             1 -> QuizSpellMode(words = words, onBack = {})
@@ -223,34 +223,127 @@ fun TestScreen() {
 }
 
 @Composable
-fun TestHistoryDialog(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
+fun TestHistoryScreen(viewModel: LibraryViewModel, onBack: () -> Unit) {
     val history by viewModel.testHistory.collectAsState(initial = emptyList())
+    var selectedHistoryItem by remember { mutableStateOf<TestHistory?>(null) }
     
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("测试历史") },
-        text = {
-            LazyColumn(modifier = Modifier.height(300.dp)) {
+    if (selectedHistoryItem != null) {
+        TestHistoryDetailScreen(
+            history = selectedHistoryItem!!, 
+            onBack = { selectedHistoryItem = null }
+        )
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
+                    Icon(Icons.Filled.ArrowBack, "Back")
+                }
+                Text(
+                    "测试历史记录", 
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (history.isEmpty()) {
-                    item { Text("暂无测试记录") }
+                    item { 
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text("暂无测试记录") 
+                        }
+                    }
                 } else {
                     items(history) { item ->
-                        val date = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(item.timestamp))
+                        val date = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(item.timestamp))
                         val percent = if (item.totalQuestions > 0) (item.correctCount * 100 / item.totalQuestions) else 0
                         
                         ListItem(
-                            headlineContent = { Text("${if(item.testType == "CHOICE") "选择题" else "拼写"} - ${percent}% 正确") },
-                            supportingContent = { Text("$date · ${item.correctCount}/${item.totalQuestions} 题 · 耗时 ${item.durationSeconds}秒") }
+                            headlineContent = { Text(if(item.testType == "CHOICE") "选择题测试" else "拼写测试") },
+                            supportingContent = { Text("$date · 得分: ${item.correctCount}/${item.totalQuestions} ($percent%)") },
+                            trailingContent = { Icon(Icons.Filled.List, "Details") },
+                            modifier = Modifier.clickable { selectedHistoryItem = item }
                         )
                         Divider()
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("关闭") }
         }
-    )
+    }
+}
+
+@Composable
+fun TestHistoryDetailScreen(history: TestHistory, onBack: () -> Unit) {
+    val resultItems: List<TestResultItem> = remember(history.questionsJson) {
+        try {
+             val type = object : TypeToken<List<TestResultItem>>() {}.type
+             Gson().fromJson(history.questionsJson, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    val date = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(history.timestamp))
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Header
+        Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
+                Icon(Icons.Filled.ArrowBack, "Back")
+            }
+            Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("测试详情", style = MaterialTheme.typography.titleMedium)
+                Text(date, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+        }
+        
+        // Summary Card
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("总题数", style = MaterialTheme.typography.labelMedium)
+                    Text("${history.totalQuestions}", style = MaterialTheme.typography.headlineMedium)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("正确", style = MaterialTheme.typography.labelMedium)
+                    Text("${history.correctCount}", style = MaterialTheme.typography.headlineMedium, color = Color.Green)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("错误", style = MaterialTheme.typography.labelMedium)
+                    Text("${history.totalQuestions - history.correctCount}", style = MaterialTheme.typography.headlineMedium, color = Color.Red)
+                }
+            }
+        }
+        
+        Text("答题详情", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(resultItems) { item ->
+                ListItem(
+                    headlineContent = { Text(item.word, style = MaterialTheme.typography.bodyLarge) },
+                    supportingContent = { 
+                         if (!item.isCorrect && !item.userAnswer.isNullOrBlank()) {
+                             Text("你的答案: ${item.userAnswer}", color = Color.Red)
+                         }
+                    },
+                    trailingContent = {
+                        if (item.isCorrect) {
+                            Icon(Icons.Filled.Check, "Correct", tint = Color.Green)
+                        } else {
+                            Icon(Icons.Filled.Clear, "Wrong", tint = Color.Red)
+                        }
+                    }
+                )
+                Divider()
+            }
+        }
+    }
 }
 
 // Simple State Holder for Quiz
