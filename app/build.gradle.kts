@@ -13,8 +13,8 @@ android {
         applicationId = "com.magicword.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.0.1"
+        versionCode = 4 // Increment version code
+        versionName = "0.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,9 +24,8 @@ android {
 
     signingConfigs {
         create("release") {
-            // Use debug key for now to simplify update process
-            // If debug.keystore is missing, it will fallback or fail, 
-            // but for GitHub Actions, we can rely on default debug key generation or provide one
+            // Use standard debug keystore for consistent signing across debug/release builds
+            // This allows installing updates without uninstalling previous versions
             storeFile = rootProject.file("app/debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
@@ -36,12 +35,15 @@ android {
 
     buildTypes {
         release {
-            // signingConfig = signingConfigs.getByName("release") // Disable for now to use default debug signing
+            signingConfig = signingConfigs.getByName("release") // Enable consistent signing
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("release") // Use same key for debug
         }
     }
     compileOptions {
