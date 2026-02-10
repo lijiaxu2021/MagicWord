@@ -1,5 +1,12 @@
 package com.magicword.app.ui
 
+import kotlinx.parcelize.Parcelize
+import android.os.Parcelable
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.MutableState
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.magicword.app.data.TestSession
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -195,13 +202,6 @@ fun TestHistoryDialog(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
 }
 
 // Simple State Holder for Quiz
-import kotlinx.parcelize.Parcelize
-import android.os.Parcelable
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.MutableState
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.magicword.app.data.TestSession
 
 @Parcelize
 data class QuizState(
