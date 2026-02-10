@@ -1,134 +1,38 @@
 package com.magicword.app.ui
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.style.TextAlign
-import com.magicword.app.data.Word
-import com.magicword.app.data.AppDatabase
-import com.magicword.app.utils.LogUtil
-
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import kotlinx.coroutines.launch
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.MutableState
-import androidx.compose.material3.OutlinedTextField
-
-import androidx.compose.runtime.LaunchedEffect
-
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-
-import androidx.compose.material.icons.filled.History
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.delay
 
 @Composable
 fun TestScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showHistory by remember { mutableStateOf(false) }
+    val tabs = listOf("选择题", "拼写")
     
-    // ... (rest of setup)
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
+    val database = AppDatabase.getDatabase(context)
+    val viewModel: LibraryViewModel = viewModel(
+        factory = LibraryViewModelFactory(database.wordDao(), prefs)
+    )
+    val allWords by viewModel.allWords.collectAsState(initial = emptyList())
+    val testCandidates by viewModel.testCandidates.collectAsState()
     
-    // State persistence using rememberSaveable for basic quiz state across tabs
-    // Note: Ideally this should be in a ViewModel, but rememberSaveable works for simple cases
-    // where we want to survive configuration changes and simple composition changes.
-    // However, for HorizontalPager in MainScreen, state might be lost if page is destroyed.
-    // Given user complaint "leaving resets", we need stronger persistence.
-    // Since we are reusing LibraryViewModel, let's keep it simple with rememberSaveable which survives process death too.
-    
-    val choiceQuizState = rememberSaveable(saver = QuizState.Saver) {
-        mutableStateOf(QuizState())
-    }
-    
-    // Listen for Test Type changes from ViewModel (triggered by Test Selected)
-    val testType by viewModel.testType.collectAsState()
-    
-    // Auto-switch tab if Test Type changes (and it's a test session)
-    LaunchedEffect(testType) {
-        val targetIndex = when(testType) {
-            LibraryViewModel.TestType.CHOICE -> 0
-            LibraryViewModel.TestType.SPELL -> 1
-        }
-        if (selectedTab != targetIndex) {
-            selectedTab = targetIndex
-        }
-    }
-    
-    if (showHistory) {
-        TestHistoryDialog(
-            viewModel = viewModel,
-            onDismiss = { showHistory = false }
-        )
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Show Test Source Info and History Button
-        Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-            if (testCandidates != null) {
-                Text(
-                    text = "正在测试选中单词 (${testCandidates!!.size}个)", 
-                    style = MaterialTheme.typography.labelMedium, 
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.CenterStart)
-                )
-                IconButton(
-                    onClick = { viewModel.setTestCandidates(null) },
-                    modifier = Modifier.align(Alignment.Center)
-                ) {
-                    Icon(androidx.compose.material.icons.Icons.Default.Close, "Exit Selection Mode")
-                }
-            }
-            
-            IconButton(
-                onClick = { showHistory = true },
-                modifier = Modifier.align(Alignment.CenterEnd)
-            ) {
-                Icon(Icons.Default.History, "Test History")
-            }
-        }
-
-        TabRow(selectedTabIndex = selectedTab) {
-            // ...
-        }
-        
-        // ...
-    }
-}
+    // Use testCandidates if available (Testing Selected), otherwise allWords (Testing Library)
+    val words = testCandidates ?: allWords
 
 @Composable
 fun TestHistoryDialog(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
