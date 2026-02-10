@@ -10,30 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.magicword.app.data.AppDatabase
-import com.magicword.app.data.Library
-import com.magicword.app.data.Word
-import com.magicword.app.utils.LogUtil
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -69,7 +47,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             onWordClick = { word -> editingWord = word }
         )
     } else {
-        // Full Screen Card Mode
+        // Full Screen Card Mode with VerticalPager
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -106,7 +84,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 }
             } else {
                 val pagerState = rememberPagerState(pageCount = { words.size })
-                HorizontalPager(
+                VerticalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize().padding(padding)
                 ) { page ->

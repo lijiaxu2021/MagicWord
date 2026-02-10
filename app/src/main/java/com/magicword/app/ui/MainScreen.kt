@@ -55,11 +55,31 @@ import com.magicword.app.ui.components.SlideInEntry
 import androidx.compose.ui.platform.LocalContext
 import com.magicword.app.utils.AuthManager
 
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.magicword.app.worker.SyncWorker
+import kotlinx.coroutines.delay
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
     var isLoggedIn by remember { mutableStateOf(AuthManager.isLoggedIn(context)) }
+
+    // 10s Active Sync Loop
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            while (true) {
+                delay(10000) // 10 seconds
+                try {
+                     WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
+                     // Optional: Log/Toast "Syncing..."
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
 
     if (!isLoggedIn) {
         AuthScreen(onLoginSuccess = { isLoggedIn = true })

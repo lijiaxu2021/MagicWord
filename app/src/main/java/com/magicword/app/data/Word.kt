@@ -4,7 +4,12 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 
-@Entity(tableName = "words")
+import androidx.room.Index
+
+@Entity(
+    tableName = "words",
+    indices = [Index(value = ["word", "libraryId"], unique = true)]
+)
 data class Word(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val word: String,
