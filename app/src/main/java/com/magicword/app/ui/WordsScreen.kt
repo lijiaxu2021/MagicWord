@@ -146,6 +146,23 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             }
         } else {
             // CARD MODE
+            // Restore Pager State from Prefs (Needs a bit of logic, simplified here)
+            // We use LaunchedEffect to scroll once
+            val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
+            LaunchedEffect(words) {
+                if (words.isNotEmpty()) {
+                    val lastIndex = prefs.getInt("last_index_${currentLibraryId}", 0)
+                    if (lastIndex in words.indices) {
+                        pagerState.scrollToPage(lastIndex)
+                    }
+                }
+            }
+            
+            // Save Pager State
+            LaunchedEffect(pagerState.currentPage) {
+                prefs.edit().putInt("last_index_${currentLibraryId}", pagerState.currentPage).apply()
+            }
+            
             Scaffold(
                 topBar = {
                     CenterAlignedTopAppBar(

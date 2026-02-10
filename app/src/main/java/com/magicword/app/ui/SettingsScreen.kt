@@ -27,6 +27,11 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
     var isLogEnabled by remember { mutableStateOf(prefs.getBoolean("enable_log", true)) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+
+    if (showAboutDialog) {
+        AboutDialog(onDismiss = { showAboutDialog = false })
+    }
 
     Scaffold(
         topBar = {
@@ -55,7 +60,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
                     )
                 }
             )
-            Divider()
+            HorizontalDivider()
             
             // View Logs
             ListItem(
@@ -63,9 +68,55 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
                 modifier = Modifier.clickable { onNavigateToLogs() },
                 trailingContent = { Text("查看 >") }
             )
-            Divider()
+            HorizontalDivider()
+
+            // About
+            ListItem(
+                headlineContent = { Text("关于 MagicWord") },
+                modifier = Modifier.clickable { showAboutDialog = true },
+                trailingContent = { Text("查看 >") }
+            )
+            HorizontalDivider()
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Footer
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "By lijiaxu2011 UpXuu",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
         }
     }
+}
+
+@Composable
+fun AboutDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("关于 MagicWord") },
+        text = {
+            Column {
+                Text("MagicWord 是一个极简风格的单词记忆应用。")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("版本: 1.0.0")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("开发者: lijiaxu2011 & UpXuu")
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("感谢您的使用！")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,7 +174,7 @@ fun LogListScreen(onBack: () -> Unit) {
                             showLogDetail = true
                         }
                     )
-                    Divider()
+                    HorizontalDivider()
                 }
             }
         }

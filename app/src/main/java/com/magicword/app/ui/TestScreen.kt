@@ -50,9 +50,10 @@ fun TestScreen() {
     val tabs = listOf("选择题", "拼写", "听写")
     
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     val database = AppDatabase.getDatabase(context)
     val viewModel: LibraryViewModel = viewModel(
-        factory = LibraryViewModelFactory(database.wordDao())
+        factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
     val words by viewModel.allWords.collectAsState(initial = emptyList())
 

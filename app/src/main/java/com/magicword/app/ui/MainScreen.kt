@@ -68,12 +68,13 @@ import com.magicword.app.data.AppDatabase
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     var isLoggedIn by remember { mutableStateOf(AuthManager.isLoggedIn(context)) }
 
     // Observe current library name for title
     val database = AppDatabase.getDatabase(context)
     val viewModel: LibraryViewModel = viewModel(
-        factory = LibraryViewModelFactory(database.wordDao())
+        factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
     val libraries by viewModel.allLibraries.collectAsState(initial = emptyList())
     val currentLibraryId by viewModel.currentLibraryId.collectAsState()

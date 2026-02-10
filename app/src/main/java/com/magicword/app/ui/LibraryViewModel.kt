@@ -21,8 +21,10 @@ import com.magicword.app.network.Message
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
-class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
-    private val _currentLibraryId = MutableStateFlow(1)
+import android.content.SharedPreferences
+
+class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
+    private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
     val currentLibraryId: StateFlow<Int> = _currentLibraryId.asStateFlow()
 
     // Sorting State
@@ -35,11 +37,23 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
         REVIEW_COUNT_ASC
     }
 
-    private val _sortOption = MutableStateFlow(SortOption.CREATED_AT_DESC)
+    private val _sortOption = MutableStateFlow(
+        try {
+            SortOption.valueOf(prefs.getString("sort_option", SortOption.CREATED_AT_DESC.name) ?: SortOption.CREATED_AT_DESC.name)
+        } catch (e: Exception) {
+            SortOption.CREATED_AT_DESC
+        }
+    )
     val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
 
     fun setSortOption(option: SortOption) {
         _sortOption.value = option
+        prefs.edit().putString("sort_option", option.name).apply()
+    }
+
+    fun switchLibrary(libraryId: Int) {
+        _currentLibraryId.value = libraryId
+        prefs.edit().putInt("current_library_id", libraryId).apply()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -75,10 +89,6 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
     }
 
     val allLibraries: Flow<List<Library>> = wordDao.getAllLibraries()
-
-    fun switchLibrary(libraryId: Int) {
-        _currentLibraryId.value = libraryId
-    }
 
     fun addLibrary(name: String) {
         viewModelScope.launch {
@@ -229,11 +239,11 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
     }
 }
 
-class LibraryViewModelFactory(private val wordDao: WordDao) : ViewModelProvider.Factory {
+class LibraryViewModelFactory(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return LibraryViewModel(wordDao) as T
+            return LibraryViewModel(wordDao, prefs) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

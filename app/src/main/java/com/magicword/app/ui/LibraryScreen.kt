@@ -61,9 +61,10 @@ import com.magicword.app.utils.LogUtil
 @Composable
 fun LibraryScreen() {
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     val database = AppDatabase.getDatabase(context)
     val viewModel: LibraryViewModel = viewModel(
-        factory = LibraryViewModelFactory(database.wordDao())
+        factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
     val words by viewModel.allWords.collectAsState(initial = emptyList())
     val libraries by viewModel.allLibraries.collectAsState(initial = emptyList())
