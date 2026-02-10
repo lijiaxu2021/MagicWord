@@ -51,6 +51,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen() {
@@ -67,7 +70,7 @@ fun LibraryScreen() {
     var showLibraryMenu by remember { mutableStateOf(false) }
     var showAddLibraryDialog by remember { mutableStateOf(false) }
     
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -198,7 +201,12 @@ fun BulkImportContent(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
     val logs by viewModel.importLogs.collectAsState()
     val isImporting by viewModel.isImporting.collectAsState()
 
-    Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+    Column(modifier = Modifier
+        .padding(16.dp)
+        .fillMaxWidth()
+        .imePadding()
+        .navigationBarsPadding()
+    ) {
         Text("AI 批量导入", style = MaterialTheme.typography.titleLarge)
         Text("输入单词列表（用逗号或换行分隔）", style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(16.dp))

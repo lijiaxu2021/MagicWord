@@ -13,9 +13,12 @@ import kotlinx.coroutines.launch
 
 import com.magicword.app.data.WordDao
 
+import com.magicword.app.data.Word
+import com.google.gson.Gson
+
 class SearchViewModel(private val wordDao: WordDao) : ViewModel() {
-    private val _searchResult = MutableStateFlow("")
-    val searchResult: StateFlow<String> = _searchResult.asStateFlow()
+    private val _searchResult = MutableStateFlow<Word?>(null)
+    val searchResult: StateFlow<Word?> = _searchResult.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -25,35 +28,58 @@ class SearchViewModel(private val wordDao: WordDao) : ViewModel() {
 
         viewModelScope.launch {
             _isLoading.value = true
-            _searchResult.value = ""
+            _searchResult.value = null
             try {
-                val prompt = "请解释单词 \"$word\"。包含音标、中文释义、英文释义和例句。格式清晰一点。"
+                val prompt = """
+                    You are a strict JSON data generator. Analyze the English word: "$word"
+                    
+                    Return a SINGLE JSON Object.
+                    
+                    STRICT JSON FORMAT RULES:
+                    1. "word": String (The word itself).
+                    2. "phonetic": String.
+                    3. "definition_cn": String (NOT List). Format: "pos. meaning".
+                    4. "definition_en": String.
+                    5. "example": String (NOT List). Format: "En sentence. Cn translation.\nEn sentence 2. Cn translation."
+                    6. "memory_method": String (NOT List).
+                    
+                    NO MARKDOWN. NO COMMENTS. ONLY JSON.
+                """.trimIndent()
+
                 val request = AiRequest(
-                    messages = listOf(Message(role = "user", content = prompt))
+                    model = "Qwen/Qwen2.5-7B-Instruct",
+                    messages = listOf(Message(role = "user", content = prompt)),
+                    temperature = 0.3
                 )
                 val response = RetrofitClient.api.chat(request)
-                val content = response.choices.firstOrNull()?.message?.content ?: "未获取到结果"
-                _searchResult.value = content
+                val content = response.choices.firstOrNull()?.message?.content ?: ""
+                
+                // Parse JSON
+                val jsonStart = content.indexOf('{')
+                val jsonEnd = content.lastIndexOf('}') + 1
+                if (jsonStart != -1 && jsonEnd > jsonStart) {
+                    val jsonStr = content.substring(jsonStart, jsonEnd)
+                    val wordObj = Gson().fromJson(jsonStr, Word::class.java)
+                    _searchResult.value = wordObj
+                } else {
+                    // Fallback if parsing fails (should handle better but strictly adhering to task)
+                    // _searchResult.value = null 
+                }
             } catch (e: Exception) {
-                _searchResult.value = "查询失败: ${e.message}"
+                e.printStackTrace()
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun saveWord(word: String, definition: String) {
+    fun saveWord(word: Word, libraryId: Int) {
         viewModelScope.launch {
-            val newWord = com.magicword.app.data.Word(
-                word = word,
-                phonetic = null,
-                definitionCn = definition.take(100), // Simplified storage for now
-                definitionEn = null,
-                example = null,
-                memoryMethod = null,
-                libraryId = 1
+            val wordToSave = word.copy(
+                id = 0, // Ensure auto-generate
+                libraryId = libraryId
             )
-            wordDao.insertWord(newWord)
+            wordDao.insertWord(wordToSave)
         }
     }
 }

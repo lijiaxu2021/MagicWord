@@ -33,6 +33,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.magicword.app.data.AppDatabase
 
+import com.magicword.app.data.Word
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen() {
@@ -81,35 +83,19 @@ fun SearchScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (result.isNotEmpty()) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+        result?.let { word ->
+            Box(modifier = Modifier.weight(1f)) {
+                WordCard(word = word)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { 
+                    // TODO: Get actual currentLibraryId from shared state
+                    viewModel.saveWord(word, libraryId = 1) 
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = "查询结果",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = result,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { viewModel.saveWord(query, result) },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("保存到词库")
-                    }
-                }
+                Text("保存到词库")
             }
         }
     }

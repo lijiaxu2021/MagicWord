@@ -93,28 +93,41 @@ fun FlashcardMode(words: List<Word>, onBack: () -> Unit) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .weight(1f) // Use weight to fill available space
                     .clickable { isFlipped = !isFlipped },
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!isFlipped) {
-                        Text(
-                            text = word.word,
-                            style = MaterialTheme.typography.displayMedium,
-                            textAlign = TextAlign.Center
-                        )
-                    } else {
-                        Text(
-                            text = word.definitionCn,
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
+                if (!isFlipped) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = word.word,
+                                style = MaterialTheme.typography.displayMedium,
+                                textAlign = TextAlign.Center
+                            )
+                            if (!word.phonetic.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = word.phonetic,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "点击查看详情",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                } else {
+                    // Show Rich Details
+                    WordDetailContent(word = word)
                 }
             }
             
