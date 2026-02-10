@@ -1,210 +1,209 @@
 > Task :app:compileDebugKotlin FAILED
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:19:2 Unresolved reference: Composable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:20:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:21:24 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:21:43 Unresolved reference: mutableIntStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:22:24 Unresolved reference: remember
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:22:35 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:25:19 Unresolved reference: LocalContext
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:26:17 Unresolved reference: remember
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:27:20 Unresolved reference: AppDatabase
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:28:39 Unresolved reference: viewModel
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:31:40 Unresolved reference: collectAsState
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:32:52 Unresolved reference: collectAsState
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:44:27 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:45:9 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:49:40 Unresolved reference: collectAsState
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:52:5 Unresolved reference: LaunchedEffect
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:53:27 'when' expression must be exhaustive, add necessary 'else' branch
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:54:13 Comparison of incompatible enums '[Error type: Return type for function cannot be resolved]' and 'LibraryViewModel.TestType' is always unsuccessful
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:55:13 Comparison of incompatible enums '[Error type: Return type for function cannot be resolved]' and 'LibraryViewModel.TestType' is always unsuccessful
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:69:5 Unresolved reference: Column
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:69:23 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:71:9 Unresolved reference: Box
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:71:24 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:71:58 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:73:17 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:75:43 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:76:43 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:77:32 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:77:47 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:79:17 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:81:32 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:81:47 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:83:72 Unresolved reference: Close
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:87:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:89:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:89:43 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:91:68 Unresolved reference: History
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:95:9 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:101:25 Unresolved reference: LogUtil
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:112:51 Variable expected
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:120:2 Unresolved reference: Composable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:121:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:122:42 Unresolved reference: collectAsState
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:124:5 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:128:35 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:128:55 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:133:36 Unresolved reference: SimpleDateFormat
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:133:68 Unresolved reference: Locale
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:133:96 Unresolved reference: Date
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:133:106 Unresolved reference: timestamp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:134:48 Unresolved reference: totalQuestions
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:134:74 Unresolved reference: correctCount
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:134:100 Unresolved reference: totalQuestions
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:137:65 Unresolved reference: testType
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:138:72 Unresolved reference: correctCount
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:138:93 Unresolved reference: totalQuestions
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:138:123 Unresolved reference: durationSeconds
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:152:2 Unresolved reference: Parcelize
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:158:5 Unresolved reference: Parcelable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:160:21 Unresolved reference: Saver
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:160:27 Unresolved reference: MutableState
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:161:22 Unresolved reference: it
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:162:25 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:162:40 Unresolved reference: it
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:167:2 Unresolved reference: Composable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:168:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:169:17 Unresolved reference: Word
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:176:9 Unresolved reference: Box
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:176:24 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:176:67 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:177:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:178:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:178:49 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:178:75 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:185:9 Unresolved reference: LaunchedEffect
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:195:9 Unresolved reference: Column
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:196:24 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:197:35 Unresolved reference: Arrangement
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:198:35 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:200:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:200:49 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:201:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:201:78 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:202:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:206:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:206:54 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:216:23 Unresolved reference: remember
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:217:68 Unresolved reference: id
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:222:33 Unresolved reference: remember
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:222:44 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:223:27 Unresolved reference: remember
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:223:38 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:225:9 Unresolved reference: Column
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:225:27 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:225:61 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:227:13 Unresolved reference: Row
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:227:37 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:228:17 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:228:35 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:229:17 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:232:13 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:232:31 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:232:50 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:235:13 Unresolved reference: Box
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:236:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:239:36 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:242:40 Unresolved reference: word
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:243:43 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:244:33 Unresolved reference: TextAlign
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:248:13 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:248:31 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:248:50 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:251:13 Unresolved reference: Column
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:252:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:254:37 Unresolved reference: rememberScrollState
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:256:25 Overload resolution ambiguity: 
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:26:2 Unresolved reference: Composable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:27:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:28:24 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:28:43 Unresolved reference: mutableIntStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:29:24 Unresolved reference: remember
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:29:35 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:32:19 Unresolved reference: LocalContext
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:33:17 Unresolved reference: remember
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:34:20 Unresolved reference: AppDatabase
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:35:39 Unresolved reference: viewModel
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:38:40 Unresolved reference: collectAsState
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:39:52 Unresolved reference: collectAsState
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:51:27 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:52:9 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:56:40 Unresolved reference: collectAsState
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:59:5 Unresolved reference: LaunchedEffect
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:60:27 'when' expression must be exhaustive, add necessary 'else' branch
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:61:13 Comparison of incompatible enums '[Error type: Return type for function cannot be resolved]' and 'LibraryViewModel.TestType' is always unsuccessful
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:62:13 Comparison of incompatible enums '[Error type: Return type for function cannot be resolved]' and 'LibraryViewModel.TestType' is always unsuccessful
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:77:47 Unresolved reference: collectAsState
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:80:5 Unresolved reference: LaunchedEffect
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:82:66 No method 'equals(Any?): Boolean' available
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:89:38 Variable expected
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:107:5 Unresolved reference: LaunchedEffect
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:122:5 Unresolved reference: Column
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:122:23 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:124:9 Unresolved reference: Box
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:124:24 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:124:58 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:126:17 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:128:43 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:129:43 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:130:32 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:130:47 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:132:17 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:134:32 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:134:47 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:136:72 Unresolved reference: Close
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:140:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:142:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:142:43 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:144:68 Unresolved reference: History
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:148:9 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:154:25 Unresolved reference: LogUtil
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:165:51 Variable expected
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:173:2 Unresolved reference: Composable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:174:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:175:42 Unresolved reference: collectAsState
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:177:5 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:181:35 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:181:55 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:186:36 Unresolved reference: SimpleDateFormat
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:186:68 Unresolved reference: Locale
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:186:96 Unresolved reference: Date
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:186:106 Unresolved reference: timestamp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:187:48 Unresolved reference: totalQuestions
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:187:74 Unresolved reference: correctCount
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:187:100 Unresolved reference: totalQuestions
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:190:65 Unresolved reference: testType
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:191:72 Unresolved reference: correctCount
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:191:93 Unresolved reference: totalQuestions
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:191:123 Unresolved reference: durationSeconds
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:216:23 Type mismatch: inferred type is Unit but MutableState<QuizState>? was expected
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:216:25 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:221:2 Unresolved reference: Composable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:222:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:223:17 Unresolved reference: Word
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:230:9 Unresolved reference: Box
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:230:24 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:230:67 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:231:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:232:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:232:49 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:232:75 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:239:9 Unresolved reference: LaunchedEffect
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:249:9 Unresolved reference: Column
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:250:24 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:251:35 Unresolved reference: Arrangement
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:252:35 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:254:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:254:49 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:255:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:255:78 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:256:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:260:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:260:54 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:270:23 Unresolved reference: remember
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:271:68 Unresolved reference: id
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:276:33 Unresolved reference: remember
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:276:44 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:277:27 Unresolved reference: remember
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:277:38 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:279:9 Unresolved reference: Column
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:279:27 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:279:61 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:281:13 Unresolved reference: Row
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:281:37 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:282:17 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:282:35 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:283:17 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:286:13 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:286:31 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:286:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:289:13 Unresolved reference: Box
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:290:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:293:36 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:296:40 Unresolved reference: word
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:297:43 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:298:33 Unresolved reference: TextAlign
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:302:13 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:302:31 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:302:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:305:13 Unresolved reference: Column
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:306:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:308:37 Unresolved reference: rememberScrollState
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:310:25 Overload resolution ambiguity: 
 public inline fun <T> Iterable<TypeVariable(T)>.forEach(action: (TypeVariable(T)) -> Unit): Unit defined in kotlin.collections
 public inline fun <K, V> Map<out TypeVariable(K), TypeVariable(V)>.forEach(action: (Map.Entry<TypeVariable(K), TypeVariable(V)>) -> Unit): Unit defined in kotlin.collections
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:256:35 Cannot infer a type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:257:62 Unresolved reference: id
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:262:44 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:262:74 Unresolved reference: Color
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:264:44 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:264:74 Unresolved reference: Color
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:266:44 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:269:40 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:272:21 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:282:36 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:282:81 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:286:62 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:286:81 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:292:13 Unresolved reference: LaunchedEffect
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:294:69 Unresolved reference: id
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:295:21 Unresolved reference: delay
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:321:2 Unresolved reference: Composable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:322:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:322:31 Unresolved reference: Word
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:324:9 Unresolved reference: Box
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:324:24 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:324:67 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:325:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:330:25 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:330:44 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:331:18 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:331:37 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:332:23 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:332:42 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:333:18 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:333:37 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:340:24 Unresolved reference: rememberSaveable
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:341:9 Unresolved reference: mutableStateOf
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:345:9 Unresolved reference: Column
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:346:24 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:347:35 Unresolved reference: Arrangement
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:348:35 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:350:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:350:51 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:351:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:351:70 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:352:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:358:34 Variable expected
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:360:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:360:54 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:369:9 Unresolved reference: Column
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:369:27 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:369:61 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:370:13 Unresolved reference: Row
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:370:37 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:371:17 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:371:35 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:372:17 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:375:13 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:375:31 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:375:50 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:377:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:379:39 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:380:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:380:43 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:383:13 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:383:31 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:383:50 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:386:36 Unresolved reference: definitionCn
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:387:39 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:388:29 Unresolved reference: TextAlign
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:389:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:389:43 Unresolved reference: Alignment
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:389:84 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:392:13 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:392:31 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:392:50 Unresolved reference: dp
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:396:43 Unresolved reference: it
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:397:27 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:398:28 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:402:13 Unresolved reference: Spacer
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:402:31 Unresolved reference: Modifier
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:402:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:310:35 Cannot infer a type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:311:62 Unresolved reference: id
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:316:44 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:316:74 Unresolved reference: Color
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:318:44 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:318:74 Unresolved reference: Color
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:320:44 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:323:40 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:326:21 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:336:36 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:336:81 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:340:62 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:340:81 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:346:13 Unresolved reference: LaunchedEffect
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:348:69 Unresolved reference: id
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:349:21 Unresolved reference: delay
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:375:2 Unresolved reference: Composable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:376:5 Functions which invoke @Composable functions must be marked with the @Composable annotation
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:376:31 Unresolved reference: Word
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:378:9 Unresolved reference: Box
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:378:24 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:378:67 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:379:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:384:25 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:384:44 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:385:18 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:385:37 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:386:23 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:386:42 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:387:18 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:387:37 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:394:24 Unresolved reference: rememberSaveable
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:395:9 Unresolved reference: mutableStateOf
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:399:9 Unresolved reference: Column
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:400:24 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:401:35 Unresolved reference: Arrangement
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:402:35 Unresolved reference: Alignment
 e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:404:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:406:57 Unresolved reference: word
-e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:416:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:404:51 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:405:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:405:70 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:406:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:412:34 Variable expected
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:414:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:414:54 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:423:9 Unresolved reference: Column
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:423:27 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:423:61 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:424:13 Unresolved reference: Row
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:424:37 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:425:17 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:425:35 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:426:17 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:429:13 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:429:31 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:429:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:431:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:433:39 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:434:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:434:43 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:437:13 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:437:31 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:437:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:440:36 Unresolved reference: definitionCn
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:441:39 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:442:29 Unresolved reference: TextAlign
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:443:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:443:43 Unresolved reference: Alignment
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:443:84 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:446:13 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:446:31 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:446:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:450:43 Unresolved reference: it
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:451:27 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:452:28 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:456:13 Unresolved reference: Spacer
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:456:31 Unresolved reference: Modifier
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:456:50 Unresolved reference: dp
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:458:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:460:57 Unresolved reference: word
+e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/TestScreen.kt:470:28 Unresolved reference: Modifier
 e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/WordsScreen.kt:105:37 Unresolved reference: selectedExportLibraries
 e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/WordsScreen.kt:105:82 Unresolved reference: selectedExportLibraries
 e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/WordsScreen.kt:111:17 Unresolved reference: selectedExportLibraries
 e: file:///home/runner/work/MagicWord/MagicWord/app/src/main/java/com/magicword/app/ui/WordsScreen.kt:111:43 Not enough information to infer type variable T
 29 actionable tasks: 27 executed, 2 from cache
 FAILURE: Build failed with an exception.
-Configuration cache entry stored.
 * What went wrong:
 Execution failed for task ':app:compileDebugKotlin'.
 > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
@@ -214,4 +213,6 @@ Execution failed for task ':app:compileDebugKotlin'.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
-BUILD FAILED in 5m 49s
+BUILD FAILED in 5m
+Configuration cache entry stored.
+Error: Process completed with exit code 1.
