@@ -47,7 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun TestScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf("选择题", "拼写", "听写")
+    val tabs = listOf("选择题", "拼写")
     
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
@@ -55,7 +55,11 @@ fun TestScreen() {
     val viewModel: LibraryViewModel = viewModel(
         factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
-    val words by viewModel.allWords.collectAsState(initial = emptyList())
+    val allWords by viewModel.allWords.collectAsState(initial = emptyList())
+    val testCandidates by viewModel.testCandidates.collectAsState()
+    
+    // Use testCandidates if available (Testing Selected), otherwise allWords (Testing Library)
+    val words = testCandidates ?: allWords
 
     // State persistence using rememberSaveable for basic quiz state across tabs
     // Note: Ideally this should be in a ViewModel, but rememberSaveable works for simple cases
@@ -69,6 +73,24 @@ fun TestScreen() {
     }
     
     Column(modifier = Modifier.fillMaxSize()) {
+        // Show Test Source Info
+        if (testCandidates != null) {
+            Box(modifier = Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "正在测试选中单词 (${testCandidates!!.size}个)", 
+                    style = MaterialTheme.typography.labelMedium, 
+                    color = MaterialTheme.colorScheme.primary
+                )
+                // Option to clear selection and test full library?
+                IconButton(
+                    onClick = { viewModel.setTestCandidates(null) },
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
+                    Icon(androidx.compose.material.icons.Icons.Default.Close, "Exit Selection Mode")
+                }
+            }
+        }
+
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -90,15 +112,7 @@ fun TestScreen() {
                 onBack = {}
             )
             1 -> QuizSpellMode(words = words, onBack = {})
-            2 -> DictationPlaceholder()
         }
-    }
-}
-
-@Composable
-fun DictationPlaceholder() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("听写功能暂未实现")
     }
 }
 

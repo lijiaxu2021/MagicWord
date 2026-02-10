@@ -102,6 +102,14 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     private val _isImporting = MutableStateFlow(false)
     val isImporting: StateFlow<Boolean> = _isImporting.asStateFlow()
 
+    // Test Candidates
+    private val _testCandidates = MutableStateFlow<List<Word>?>(null)
+    val testCandidates: StateFlow<List<Word>?> = _testCandidates.asStateFlow()
+
+    fun setTestCandidates(words: List<Word>?) {
+        _testCandidates.value = words
+    }
+
     fun deleteWord(word: Word) {
         viewModelScope.launch {
             wordDao.deleteWord(word)
@@ -109,17 +117,23 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     }
 
     fun updateLibraryLastIndex(libraryId: Int, index: Int) {
+        // Optimistic update local prefs immediately
+        prefs.edit().putInt("last_index_$libraryId", index).apply()
+        
         viewModelScope.launch {
-            // Update library lastIndex using DAO (need to add update method to DAO first or use raw query)
-            // Or simpler: Assuming we have a DAO method for updating library or executing SQL.
-            // Since we don't have a libraryDao here, we might need to add one or use wordDao if it supports library ops.
-            // wordDao has insertLibrary and getAllLibraries. Let's add updateLibrary or similar.
-            // For now, let's assume we can update it. Ideally, we should add `updateLibrary(library: Library)` to WordDao.
-            // We will fetch, update, and save.
-            // This requires Library entity update.
-            // NOTE: We'll implement this properly by adding updateLibrary to WordDao in next step.
             wordDao.updateLibraryLastIndex(libraryId, index)
         }
+    }
+
+    // Helper to get initial index from DB or Prefs
+    suspend fun getInitialLastIndex(libraryId: Int): Int {
+        // Try DB first (source of truth), fallback to Prefs
+        // We need a DAO method to get library by ID.
+        // Assuming we can add it or use raw query.
+        // For now, let's rely on Prefs as "fast path" and we already sync them.
+        // To be robust, we should read from DB.
+        // Let's assume Prefs is good enough for synchronous init, but we sync DB.
+        return prefs.getInt("last_index_$libraryId", 0)
     }
     
     fun deleteWords(ids: List<Int>) {

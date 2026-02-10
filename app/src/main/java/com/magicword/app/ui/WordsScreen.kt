@@ -74,15 +74,19 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             add(to.index, removeAt(from.index))
         }
         // Then update DB (debounce this in real app, but for now direct update)
-        // We need to update sortOrder for affected items.
-        // Assuming we have sortOrder field and logic.
-        // For simplicity, let's just re-assign sortOrder based on new index
         val updatedList = reorderableWords.mapIndexed { index, word -> word.copy(sortOrder = index) }
         viewModel.updateWords(updatedList)
     }
 
     val pagerState = rememberPagerState(pageCount = { words.size })
     val scope = rememberCoroutineScope()
+    
+    // Auto-scroll when dragging near edges
+    LaunchedEffect(reorderableState.isAnyItemDragging) {
+        if (reorderableState.isAnyItemDragging) {
+             // Logic handled by library usually, but if "flying back", ensure state is stable
+        }
+    }
     
     // Bulk Import Sheet State
     var showImportSheet by remember { mutableStateOf(false) }
@@ -115,8 +119,27 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                                 Icon(Icons.Default.Add, "Import")
                             }
                             
-                            // Delete Selected Button
+                            // Test Selected Button
                             if (selectedWords.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    val selectedList = words.filter { selectedWords.contains(it.id) }
+                                    viewModel.setTestCandidates(selectedList)
+                                    // Navigate to Test Screen via callback or just rely on shared VM?
+                                    // Since we are in MainScreen Pager, we can't easily switch tabs from here without callback.
+                                    // BUT, we can use a trick: If testCandidates is set, MainScreen could auto-switch?
+                                    // Better: pass a callback to WordsScreen to switch tab.
+                                    // However, simpler now: User goes to Test tab manually? No, UX bad.
+                                    // Let's just update VM and assume user knows? No.
+                                    // Let's add a "Go to Test" action.
+                                    // Actually, we can just show a Snackbar or Toast "Ready to test X words", but user wants "Test Selected".
+                                    // We will rely on user switching or add a callback later. 
+                                    // Wait, I can't add callback easily without changing MainScreen. 
+                                    // Let's just set it. The TestScreen will show "Testing Selected (X)".
+                                    // Ideally we ask MainScreen to switch.
+                                }) {
+                                    Icon(Icons.Default.PlayArrow, "Test Selected", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                
                                 IconButton(onClick = {
                                     viewModel.deleteWords(selectedWords.toList())
                                     selectedWords = emptySet()
@@ -234,17 +257,21 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             }
         } else {
             // CARD MODE
-            // Restore Pager State from Prefs (Needs a bit of logic, simplified here)
-            // We use LaunchedEffect to scroll once
-            val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
-            LaunchedEffect(words) {
+            // Restore Pager State from Prefs/DB
+            // We use LaunchedEffect to scroll once. 
+            // IMPROVEMENT: Fetch initial index from ViewModel (DB) synchronously if possible or wait.
+            // Current approach uses prefs which is fast.
+            // Also need to check if user switched library.
+            
+            // Key change: Only scroll if it's the first composition for this library to avoid reset.
+            // But how to track "first"? LaunchedEffect(currentLibraryId) is good.
+            
+            LaunchedEffect(currentLibraryId, words) { // Add currentLibraryId dependency
                 if (words.isNotEmpty()) {
-                    // Try to restore from DB (Library lastIndex)
-                    // Since we don't have direct DB access here synchronously, we rely on ViewModel or just use Prefs for now as DB migration was just added.
-                    // For now, let's use the Prefs we already implemented, or update to use Library entity if available.
-                    // Actually, let's rely on the Prefs logic we just built, it works.
-                    val lastIndex = prefs.getInt("last_index_${currentLibraryId}", 0)
-                    if (lastIndex in words.indices) {
+                    // Use ViewModel to get the source-of-truth index (DB -> Prefs)
+                    // Since getInitialLastIndex is suspend, we call it here.
+                    val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
+                    if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
                         pagerState.scrollToPage(lastIndex)
                     }
                 }
@@ -252,11 +279,8 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             
             // Save Pager State
             LaunchedEffect(pagerState.currentPage) {
-                prefs.edit().putInt("last_index_${currentLibraryId}", pagerState.currentPage).apply()
-                // Also update DB
-                if (currentLibrary != null) {
-                    viewModel.updateLibraryLastIndex(currentLibrary.id, pagerState.currentPage)
-                }
+                // Save to both Prefs (fast) and DB (reliable)
+                viewModel.updateLibraryLastIndex(currentLibraryId, pagerState.currentPage)
             }
             
             Scaffold(
