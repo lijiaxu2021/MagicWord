@@ -79,7 +79,8 @@ fun MainScreen() {
     val currentLibraryId by viewModel.currentLibraryId.collectAsState()
     val currentLibraryName = libraries.find { it.id == currentLibraryId }?.name ?: "默认词库"
 
-    // 10s Active Sync Loop
+    // 10s Active Sync Loop (DISABLED temporarily)
+    /*
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
             while (true) {
@@ -94,11 +95,13 @@ fun MainScreen() {
             }
         }
     }
+    */
 
-    if (!isLoggedIn) {
-        AuthScreen(onLoginSuccess = { isLoggedIn = true })
-        return
-    }
+    // Bypass Auth for now
+    // if (!isLoggedIn) {
+    //     AuthScreen(onLoginSuccess = { isLoggedIn = true })
+    //     return
+    // }
 
     val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()

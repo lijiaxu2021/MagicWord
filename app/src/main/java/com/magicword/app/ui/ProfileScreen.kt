@@ -106,15 +106,12 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
             Divider()
             Spacer(modifier = Modifier.height(16.dp))
             
+            // Sync Logs (Hidden as requested)
+            /*
             Text("同步日志", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Sync Logs (Real logs from SyncWorker via SharedPrefs or Room? 
-            // For simplicity, let's read from LogUtil if possible, or just show a status)
-            // Ideally, we should persist sync logs in DB. 
-            // But user said "sync log is useless", so let's make it useful: Show Last Sync Time & Status.
-             
-             Card(
+            Card(
                  modifier = Modifier.fillMaxWidth().height(120.dp),
                  colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
              ) {
@@ -127,9 +124,12 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                      Text("每10秒自动同步中...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                  }
              }
+            */
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            // Logout hidden as sync/auth is disabled
+            /*
             Button(
                 onClick = { 
                     AuthManager.logout(context)
@@ -140,6 +140,7 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
             ) {
                 Text("退出登录")
             }
+            */
         }
     }
 }

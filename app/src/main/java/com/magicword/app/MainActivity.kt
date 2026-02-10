@@ -23,11 +23,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         LogUtil.init(this)
         
-        // Trigger Sync on App Start and Periodic (every 15 mins min by system, but we need 10s?)
-        // Android WorkManager minimum period is 15 minutes.
-        // For 10s sync, we need a Handler or Coroutine loop in a Foreground Service or Singleton.
-        // But user asked for "10s sync". Let's use a Coroutine loop in MainActivity/Application scope for active sync while app is open.
-        
+        // Trigger Sync on App Start and Periodic (DISABLED temporarily)
+        /*
         try {
             // Background sync (robust, 15m)
             val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()
@@ -43,6 +40,7 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        */
 
         // Active Sync Loop (While App is Open)
         // Ideally this should be in a Service or ViewModel, but MainScreen is root.
