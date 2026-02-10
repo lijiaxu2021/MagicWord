@@ -11,11 +11,23 @@ import com.magicword.app.ui.MainScreen
 import com.magicword.app.ui.theme.EasyWordTheme
 
 import com.magicword.app.utils.LogUtil
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.magicword.app.worker.SyncWorker
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogUtil.init(this)
+        
+        // Trigger Sync on App Start
+        try {
+            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>().build()
+            WorkManager.getInstance(this).enqueue(syncRequest)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         setContent {
             EasyWordTheme {
                 // A surface container using the 'background' color from the theme

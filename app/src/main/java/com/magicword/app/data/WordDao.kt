@@ -29,4 +29,7 @@ interface WordDao {
 
     @Update
     suspend fun updateWord(word: Word)
+
+    @Query("SELECT * FROM words")
+    suspend fun getAllWordsList(): List<Word>
 }

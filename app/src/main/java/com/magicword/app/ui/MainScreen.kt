@@ -52,10 +52,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import com.magicword.app.ui.components.SlideInEntry
+import androidx.compose.ui.platform.LocalContext
+import com.magicword.app.utils.AuthManager
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    var isLoggedIn by remember { mutableStateOf(AuthManager.isLoggedIn(context)) }
+
+    if (!isLoggedIn) {
+        AuthScreen(onLoginSuccess = { isLoggedIn = true })
+        return
+    }
+
     val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()
     
@@ -78,7 +88,13 @@ fun MainScreen() {
     } else if (currentOverlay == "logs") {
         LogListScreen(onBack = { currentOverlay = "settings" })
     } else if (currentOverlay == "profile") {
-        ProfileScreen(onBack = { currentOverlay = null })
+        ProfileScreen(
+            onBack = { currentOverlay = null },
+            onLogout = {
+                isLoggedIn = false
+                currentOverlay = null
+            }
+        )
     } else {
         Scaffold(
             topBar = {

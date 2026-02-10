@@ -14,9 +14,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.magicword.app.data.AppDatabase
 import androidx.compose.ui.platform.LocalContext
 
+import com.magicword.app.utils.AuthManager
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBack: () -> Unit) {
+fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
     val context = LocalContext.current
     val database = AppDatabase.getDatabase(context)
     val viewModel: LibraryViewModel = viewModel(
@@ -24,9 +26,9 @@ fun ProfileScreen(onBack: () -> Unit) {
     )
     val words by viewModel.allWords.collectAsState(initial = emptyList())
 
-    // Mock User Data (Replace with real auth later)
-    val username = "User"
-    val email = "user@example.com"
+    // Real User Data
+    val username = AuthManager.getUsername(context) ?: "User"
+    val email = "MagicWord User"
     
     // Stats
     val totalWords = words.size
@@ -101,7 +103,10 @@ fun ProfileScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             
             Button(
-                onClick = { /* TODO: Logout */ },
+                onClick = { 
+                    AuthManager.logout(context)
+                    onLogout()
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 modifier = Modifier.fillMaxWidth()
             ) {
