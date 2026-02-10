@@ -34,7 +34,8 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         ALPHA_ASC,
         ALPHA_DESC,
         REVIEW_COUNT_DESC,
-        REVIEW_COUNT_ASC
+        REVIEW_COUNT_ASC,
+        CUSTOM // Custom order
     }
 
     private val _sortOption = MutableStateFlow(
@@ -68,6 +69,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 SortOption.ALPHA_DESC -> list.sortedByDescending { it.word }
                 SortOption.REVIEW_COUNT_DESC -> list.sortedByDescending { it.reviewCount }
                 SortOption.REVIEW_COUNT_ASC -> list.sortedBy { it.reviewCount }
+                SortOption.CUSTOM -> list.sortedBy { it.sortOrder } // Use sortOrder for Custom
             }
         }
     }
@@ -84,6 +86,10 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     // Batch update for reordering or selection
     fun updateWords(words: List<Word>) {
         viewModelScope.launch {
+            // Also automatically switch to CUSTOM sort to reflect reordering
+            if (_sortOption.value != SortOption.CUSTOM) {
+                setSortOption(SortOption.CUSTOM)
+            }
             words.forEach { wordDao.updateWord(it) }
         }
     }
