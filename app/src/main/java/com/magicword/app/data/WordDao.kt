@@ -30,6 +30,12 @@ interface WordDao {
     @Update
     suspend fun updateWord(word: Word)
 
+    @Query("DELETE FROM words WHERE id = :id")
+    suspend fun deleteWordById(id: Int)
+
+    @Query("UPDATE libraries SET lastIndex = :index WHERE id = :libraryId")
+    suspend fun updateLibraryLastIndex(libraryId: Int, index: Int)
+
     @Query("SELECT * FROM words")
     suspend fun getAllWordsList(): List<Word>
 }

@@ -104,15 +104,14 @@ fun MainScreen() {
     //     return
     // }
 
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
     
     // Navigation items
     val items = listOf(
         Screen.Words,
         Screen.Search,
-        Screen.Test,
-        Screen.Library
+        Screen.Test
     )
 
     // Current Screen State management for overlays (Settings, Logs, Profile)
@@ -180,7 +179,6 @@ fun MainScreen() {
                         0 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
                         1 -> SearchScreen()
                         2 -> TestScreen()
-                        3 -> LibraryScreen()
                     }
                 }
             }
@@ -192,5 +190,4 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Words : Screen("words", "单词", Icons.Default.Book)
     object Search : Screen("search", "搜词", Icons.Default.Search)
     object Test : Screen("test", "测试", Icons.Default.CheckCircle)
-    object Library : Screen("library", "词库", Icons.Default.List)
 }

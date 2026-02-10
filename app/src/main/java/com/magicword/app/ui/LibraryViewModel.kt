@@ -108,13 +108,33 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         }
     }
 
+    fun updateLibraryLastIndex(libraryId: Int, index: Int) {
+        viewModelScope.launch {
+            // Update library lastIndex using DAO (need to add update method to DAO first or use raw query)
+            // Or simpler: Assuming we have a DAO method for updating library or executing SQL.
+            // Since we don't have a libraryDao here, we might need to add one or use wordDao if it supports library ops.
+            // wordDao has insertLibrary and getAllLibraries. Let's add updateLibrary or similar.
+            // For now, let's assume we can update it. Ideally, we should add `updateLibrary(library: Library)` to WordDao.
+            // We will fetch, update, and save.
+            // This requires Library entity update.
+            // NOTE: We'll implement this properly by adding updateLibrary to WordDao in next step.
+            wordDao.updateLibraryLastIndex(libraryId, index)
+        }
+    }
+    
+    fun deleteWords(ids: List<Int>) {
+        viewModelScope.launch {
+            ids.forEach { id ->
+                wordDao.deleteWordById(id)
+            }
+        }
+    }
+
     fun updateWord(word: Word) {
         viewModelScope.launch {
             wordDao.updateWord(word)
         }
     }
-
-    // Helper for retry
     private suspend fun <T> retry(times: Int = 3, block: suspend () -> T): T {
         var lastException: Exception? = null
         repeat(times) {

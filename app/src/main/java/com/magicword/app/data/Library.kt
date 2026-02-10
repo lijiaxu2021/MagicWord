@@ -8,5 +8,6 @@ data class Library(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val description: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastIndex: Int = 0 // Persist last viewed index here
 )
