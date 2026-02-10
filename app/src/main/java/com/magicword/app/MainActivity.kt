@@ -10,9 +10,12 @@ import androidx.compose.ui.Modifier
 import com.magicword.app.ui.MainScreen
 import com.magicword.app.ui.theme.EasyWordTheme
 
+import com.magicword.app.utils.LogUtil
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LogUtil.init(this)
         setContent {
             EasyWordTheme {
                 // A surface container using the 'background' color from the theme

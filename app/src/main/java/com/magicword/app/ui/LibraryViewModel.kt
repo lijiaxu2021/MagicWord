@@ -51,6 +51,12 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
         }
     }
 
+    fun updateWord(word: Word) {
+        viewModelScope.launch {
+            wordDao.updateWord(word)
+        }
+    }
+
     fun bulkImport(text: String) {
         if (text.isBlank()) return
         
