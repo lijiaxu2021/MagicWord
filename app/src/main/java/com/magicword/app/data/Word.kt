@@ -23,5 +23,6 @@ data class Word(
     val lastReviewTime: Long = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val correctCount: Int = 0,
-    val incorrectCount: Int = 0
+    val incorrectCount: Int = 0,
+    val sortOrder: Int = 0
 )

@@ -60,11 +60,24 @@ import androidx.work.WorkManager
 import com.magicword.app.worker.SyncWorker
 import kotlinx.coroutines.delay
 
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.magicword.app.data.AppDatabase
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
     var isLoggedIn by remember { mutableStateOf(AuthManager.isLoggedIn(context)) }
+
+    // Observe current library name for title
+    val database = AppDatabase.getDatabase(context)
+    val viewModel: LibraryViewModel = viewModel(
+        factory = LibraryViewModelFactory(database.wordDao())
+    )
+    val libraries by viewModel.allLibraries.collectAsState(initial = emptyList())
+    val currentLibraryId by viewModel.currentLibraryId.collectAsState()
+    val currentLibraryName = libraries.find { it.id == currentLibraryId }?.name ?: "默认词库"
 
     // 10s Active Sync Loop
     LaunchedEffect(isLoggedIn) {
@@ -120,7 +133,7 @@ fun MainScreen() {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("MagicWord") },
+                    title = { Text("MagicWord - $currentLibraryName") },
                     navigationIcon = {
                         IconButton(onClick = { currentOverlay = "profile" }) {
                             Icon(

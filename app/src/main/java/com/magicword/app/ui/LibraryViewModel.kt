@@ -22,9 +22,60 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(1)
     val currentLibraryId: StateFlow<Int> = _currentLibraryId.asStateFlow()
 
+    // Sorting State
+    enum class SortOption {
+        CREATED_AT_DESC,
+        CREATED_AT_ASC,
+        ALPHA_ASC,
+        ALPHA_DESC,
+        REVIEW_COUNT_DESC,
+        REVIEW_COUNT_ASC
+    }
+
+    private val _sortOption = MutableStateFlow(SortOption.CREATED_AT_DESC)
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
+
+    fun setSortOption(option: SortOption) {
+        _sortOption.value = option
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    val allWords: Flow<List<Word>> = _currentLibraryId.flatMapLatest { id ->
-        wordDao.getWordsByLibrary(id)
+    val allWords: Flow<List<Word>> = kotlinx.coroutines.flow.combine(_currentLibraryId, _sortOption) { id, sort ->
+        Pair(id, sort)
+    }.flatMapLatest { (id, sort) ->
+        // We will fetch all and sort in memory or use different DAO queries.
+        // For simplicity and reorder capability, sorting in memory is easier for small lists,
+        // but DAO is better. Let's stick to memory sort for flexibility or add DAO queries.
+        // Given user wants reordering (custom sort), we might need a custom sort field.
+        // If sorting by standard fields, we use them.
+        // If sorting by custom order (Drag n Drop), we use sortOrder.
+        // For now, let's just get all words and sort in ViewModel or use one DAO query and sort here.
+        wordDao.getWordsByLibrary(id).kotlinx.coroutines.flow.map { list ->
+            when (sort) {
+                SortOption.CREATED_AT_DESC -> list.sortedByDescending { it.createdAt }
+                SortOption.CREATED_AT_ASC -> list.sortedBy { it.createdAt }
+                SortOption.ALPHA_ASC -> list.sortedBy { it.word }
+                SortOption.ALPHA_DESC -> list.sortedByDescending { it.word }
+                SortOption.REVIEW_COUNT_DESC -> list.sortedByDescending { it.reviewCount }
+                SortOption.REVIEW_COUNT_ASC -> list.sortedBy { it.reviewCount }
+            }
+        }
+    }
+
+    fun incrementReviewCount(word: Word) {
+        viewModelScope.launch {
+             wordDao.updateWord(word.copy(
+                 reviewCount = word.reviewCount + 1,
+                 lastReviewTime = System.currentTimeMillis()
+             ))
+        }
+    }
+    
+    // Batch update for reordering or selection
+    fun updateWords(words: List<Word>) {
+        viewModelScope.launch {
+            words.forEach { wordDao.updateWord(it) }
+        }
     }
 
     val allLibraries: Flow<List<Library>> = wordDao.getAllLibraries()
