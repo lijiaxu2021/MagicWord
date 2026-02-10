@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.magicword.app.utils.LogUtil
 import java.io.File
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,9 +129,6 @@ fun LogListScreen(onBack: () -> Unit) {
         }
     }
 }
-
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun LogDetailDialog(content: String, onDismiss: () -> Unit) {
