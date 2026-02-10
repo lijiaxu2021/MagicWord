@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.easyword.app"
+    namespace = "com.magicword.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.easyword.app"
+        applicationId = "com.magicword.app"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

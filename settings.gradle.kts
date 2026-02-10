@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "EasyWord"
+rootProject.name = "MagicWord"
 include(":app")
