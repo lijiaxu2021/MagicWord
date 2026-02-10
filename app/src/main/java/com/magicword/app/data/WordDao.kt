@@ -15,8 +15,11 @@ interface WordDao {
     @Query("SELECT * FROM libraries")
     fun getAllLibraries(): Flow<List<Library>>
 
+    @Query("SELECT * FROM libraries WHERE id = :id")
+    suspend fun getLibraryById(id: Int): Library?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLibrary(library: Library)
+    suspend fun insertLibrary(library: Library): Long
 
     @Query("SELECT * FROM words WHERE word = :text AND libraryId = :libraryId LIMIT 1")
     suspend fun getWordByText(text: String, libraryId: Int): Word?

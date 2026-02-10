@@ -34,6 +34,8 @@ import android.content.SharedPreferences
 import com.magicword.app.data.TestHistory
 import com.magicword.app.data.TestSession
 import java.util.ArrayDeque
+import com.magicword.app.data.LibraryExportData
+import com.magicword.app.data.ExportPackage
 
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
@@ -242,13 +244,24 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 
                 // Fetch words based on libraryIds (or current if null/empty)
                 val targetIds = if (libraryIds.isNullOrEmpty()) listOf(_currentLibraryId.value) else libraryIds
-                val wordsToExport = mutableListOf<Word>()
+                
+                val exportDataList = mutableListOf<LibraryExportData>()
                 
                 targetIds.forEach { id ->
-                    wordsToExport.addAll(wordDao.getWordsByLibraryList(id))
+                    val library = wordDao.getLibraryById(id)
+                    if (library != null) {
+                        val words = wordDao.getWordsByLibraryList(id)
+                        exportDataList.add(LibraryExportData(
+                            name = library.name,
+                            description = library.description,
+                            words = words
+                        ))
+                    }
                 }
                 
-                val json = Gson().toJson(wordsToExport)
+                val exportPackage = ExportPackage(libraries = exportDataList)
+                
+                val json = Gson().toJson(exportPackage)
                 val fileName = "magicword_export_${if(targetIds.size > 1) "multi" else targetIds[0]}_${System.currentTimeMillis()}.json"
                 val file = File(context.getExternalFilesDir(null), fileName)
                 
@@ -265,15 +278,23 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         }
     }
 
-    // Helper to get JSON string for export (Supports multiple)
+    // Helper to get JSON string for export (Supports multiple) - used by UI share intent maybe
     suspend fun getLibraryJson(libraryIds: List<Int>?): String {
         val targetIds = if (libraryIds.isNullOrEmpty()) listOf(_currentLibraryId.value) else libraryIds
-        val wordsToExport = mutableListOf<Word>()
+        val exportDataList = mutableListOf<LibraryExportData>()
         
         targetIds.forEach { id ->
-            wordsToExport.addAll(wordDao.getWordsByLibraryList(id))
+            val library = wordDao.getLibraryById(id)
+            if (library != null) {
+                val words = wordDao.getWordsByLibraryList(id)
+                exportDataList.add(LibraryExportData(
+                    name = library.name,
+                    description = library.description,
+                    words = words
+                ))
+            }
         }
-        return Gson().toJson(wordsToExport)
+        return Gson().toJson(ExportPackage(libraries = exportDataList))
     }
 
     // Import Library from JSON String
@@ -283,20 +304,43 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 _importLogs.value = listOf("正在导入...")
                 _isImporting.value = true
                 
+                // Try to parse as new ExportPackage format first
+                try {
+                    val exportPackage = Gson().fromJson(jsonContent, ExportPackage::class.java)
+                    if (exportPackage != null && exportPackage.libraries.isNotEmpty()) {
+                        var importedCount = 0
+                        
+                        exportPackage.libraries.forEach { libData ->
+                            // Create new library to avoid conflicts
+                            val newLib = Library(
+                                name = libData.name + " (Imported)",
+                                description = libData.description
+                            )
+                            val newLibId = wordDao.insertLibrary(newLib).toInt()
+                            
+                            libData.words.forEach { word ->
+                                wordDao.insertWord(word.copy(id = 0, libraryId = newLibId))
+                            }
+                            importedCount += libData.words.size
+                            _importLogs.value = _importLogs.value + "📥 已导入词库: ${libData.name}"
+                        }
+                         _importLogs.value = _importLogs.value + "✅ 成功导入 ${exportPackage.libraries.size} 个词库，共 $importedCount 个单词"
+                         return@launch
+                    }
+                } catch (e: Exception) {
+                    // Fallback to legacy list format
+                }
+
+                // Fallback: Try legacy list format
                 val type = object : TypeToken<List<Word>>() {}.type
                 val words: List<Word> = Gson().fromJson(jsonContent, type)
                 
                 if (words.isNotEmpty()) {
-                    // Create a new library for import
-                    val newLibId = System.currentTimeMillis().toInt() // Simple ID gen
-                    // Insert library first (assuming auto-gen ID logic or insert raw)
-                    // Simplified: Insert words with current library ID or new one
-                    // Let's add to CURRENT library for simplicity as requested "Import"
-                    
+                    // Legacy import: Add to current library
                     words.forEach { word ->
                         wordDao.insertWord(word.copy(id = 0, libraryId = _currentLibraryId.value))
                     }
-                    _importLogs.value = listOf("✅ 成功导入 ${words.size} 个单词")
+                    _importLogs.value = listOf("✅ 成功导入 ${words.size} 个单词 (旧格式)")
                 } else {
                     _importLogs.value = listOf("⚠️ JSON 内容为空或格式错误")
                 }
