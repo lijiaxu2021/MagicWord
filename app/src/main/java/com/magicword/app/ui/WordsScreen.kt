@@ -119,34 +119,39 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                                 Icon(Icons.Default.Add, "Import")
                             }
                             
-                            // Test Selected Button
-                            if (selectedWords.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    val selectedList = words.filter { selectedWords.contains(it.id) }
-                                    viewModel.setTestCandidates(selectedList)
-                                    // Navigate to Test Screen via callback or just rely on shared VM?
-                                    // Since we are in MainScreen Pager, we can't easily switch tabs from here without callback.
-                                    // BUT, we can use a trick: If testCandidates is set, MainScreen could auto-switch?
-                                    // Better: pass a callback to WordsScreen to switch tab.
-                                    // However, simpler now: User goes to Test tab manually? No, UX bad.
-                                    // Let's just update VM and assume user knows? No.
-                                    // Let's add a "Go to Test" action.
-                                    // Actually, we can just show a Snackbar or Toast "Ready to test X words", but user wants "Test Selected".
-                                    // We will rely on user switching or add a callback later. 
-                                    // Wait, I can't add callback easily without changing MainScreen. 
-                                    // Let's just set it. The TestScreen will show "Testing Selected (X)".
-                                    // Ideally we ask MainScreen to switch.
-                                }) {
-                                    Icon(Icons.Default.PlayArrow, "Test Selected", tint = MaterialTheme.colorScheme.primary)
-                                }
-                                
-                                IconButton(onClick = {
-                                    viewModel.deleteWords(selectedWords.toList())
-                                    selectedWords = emptySet()
-                                }) {
-                                    Icon(Icons.Default.Delete, "Delete Selected", tint = MaterialTheme.colorScheme.error)
-                                }
-                            }
+    // Test Type Selection Dialog
+    var showTestTypeDialog by remember { mutableStateOf(false) }
+
+    // Test Selected Button
+    if (selectedWords.isNotEmpty()) {
+        IconButton(onClick = {
+            showTestTypeDialog = true
+        }) {
+            Icon(Icons.Default.PlayArrow, "Test Selected", tint = MaterialTheme.colorScheme.primary)
+        }
+        
+        IconButton(onClick = {
+            viewModel.deleteWords(selectedWords.toList())
+            selectedWords = emptySet()
+        }) {
+            Icon(Icons.Default.Delete, "Delete Selected", tint = MaterialTheme.colorScheme.error)
+        }
+    }
+    
+    if (showTestTypeDialog) {
+        TestTypeSelectionDialog(
+            onDismiss = { showTestTypeDialog = false },
+            onConfirm = { type ->
+                val selectedList = words.filter { selectedWords.contains(it.id) }
+                viewModel.setTestCandidates(selectedList)
+                viewModel.setTestType(type)
+                showTestTypeDialog = false
+                // Note: User needs to navigate to Test tab manually or we add callback.
+                // Assuming MainScreen observes testCandidates/Type and switches tab, OR user manually switches.
+                // For now, user manually switches, but at least the TYPE is set correctly.
+            }
+        )
+    }
                         
                             // Sort Button
                             Box {
@@ -436,6 +441,30 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             )
         }
     }
+}
+
+@Composable
+fun TestTypeSelectionDialog(onDismiss: () -> Unit, onConfirm: (LibraryViewModel.TestType) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择测试类型") },
+        text = {
+            Column {
+                TextButton(onClick = { onConfirm(LibraryViewModel.TestType.CHOICE) }) {
+                    Text("选择题模式")
+                }
+                TextButton(onClick = { onConfirm(LibraryViewModel.TestType.SPELL) }) {
+                    Text("拼写模式")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 @Composable

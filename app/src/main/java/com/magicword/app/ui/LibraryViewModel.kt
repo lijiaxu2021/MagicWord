@@ -108,6 +108,18 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     private val _isImporting = MutableStateFlow(false)
     val isImporting: StateFlow<Boolean> = _isImporting.asStateFlow()
 
+    // Test Type State (Choice or Spell)
+    enum class TestType {
+        CHOICE, SPELL
+    }
+    
+    private val _testType = MutableStateFlow(TestType.CHOICE)
+    val testType: StateFlow<TestType> = _testType.asStateFlow()
+    
+    fun setTestType(type: TestType) {
+        _testType.value = type
+    }
+    
     // Test Candidates
     private val _testCandidates = MutableStateFlow<List<Word>?>(null)
     val testCandidates: StateFlow<List<Word>?> = _testCandidates.asStateFlow()

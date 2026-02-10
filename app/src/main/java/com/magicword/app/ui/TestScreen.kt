@@ -77,6 +77,20 @@ fun TestScreen() {
         mutableStateOf(QuizState())
     }
     
+    // Listen for Test Type changes from ViewModel (triggered by Test Selected)
+    val testType by viewModel.testType.collectAsState()
+    
+    // Auto-switch tab if Test Type changes (and it's a test session)
+    LaunchedEffect(testType) {
+        val targetIndex = when(testType) {
+            LibraryViewModel.TestType.CHOICE -> 0
+            LibraryViewModel.TestType.SPELL -> 1
+        }
+        if (selectedTab != targetIndex) {
+            selectedTab = targetIndex
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Show Test Source Info
         if (testCandidates != null) {
