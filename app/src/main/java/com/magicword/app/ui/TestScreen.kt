@@ -34,6 +34,89 @@ fun TestScreen() {
     // Use testCandidates if available (Testing Selected), otherwise allWords (Testing Library)
     val words = testCandidates ?: allWords
 
+    // State persistence using rememberSaveable for basic quiz state across tabs
+    // Note: Ideally this should be in a ViewModel, but rememberSaveable works for simple cases
+    // where we want to survive configuration changes and simple composition changes.
+    // However, for HorizontalPager in MainScreen, state might be lost if page is destroyed.
+    // Given user complaint "leaving resets", we need stronger persistence.
+    // Since we are reusing LibraryViewModel, let's keep it simple with rememberSaveable which survives process death too.
+    
+    val choiceQuizState = rememberSaveable(saver = QuizState.Saver) {
+        mutableStateOf(QuizState())
+    }
+    
+    // Listen for Test Type changes from ViewModel (triggered by Test Selected)
+    val testType by viewModel.testType.collectAsState()
+    
+    // Auto-switch tab if Test Type changes (and it's a test session)
+    LaunchedEffect(testType) {
+        val targetIndex = when(testType) {
+            LibraryViewModel.TestType.CHOICE -> 0
+            LibraryViewModel.TestType.SPELL -> 1
+        }
+        if (selectedTab != targetIndex) {
+            selectedTab = targetIndex
+        }
+    }
+    
+    if (showHistory) {
+        TestHistoryDialog(
+            viewModel = viewModel,
+            onDismiss = { showHistory = false }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Show Test Source Info and History Button
+        Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+            if (testCandidates != null) {
+                Text(
+                    text = "正在测试选中单词 (${testCandidates!!.size}个)", 
+                    style = MaterialTheme.typography.labelMedium, 
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                )
+                IconButton(
+                    onClick = { viewModel.setTestCandidates(null) },
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Icon(androidx.compose.material.icons.Icons.Default.Close, "Exit Selection Mode")
+                }
+            }
+            
+            IconButton(
+                onClick = { showHistory = true },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(androidx.compose.material.icons.Icons.Default.History, "Test History")
+            }
+        }
+
+        TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { 
+                        selectedTab = index 
+                        LogUtil.logFeature("TestTabSwitch", "Manual", "{ \"tab\": \"$title\" }")
+                    },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        when (selectedTab) {
+            0 -> QuizChoiceMode(
+                words = words, 
+                state = choiceQuizState.value,
+                onStateChange = { choiceQuizState.value = it },
+                onBack = {}
+            )
+            1 -> QuizSpellMode(words = words, onBack = {})
+        }
+    }
+}
+
 @Composable
 fun TestHistoryDialog(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
     val history by viewModel.testHistory.collectAsState(initial = emptyList())
