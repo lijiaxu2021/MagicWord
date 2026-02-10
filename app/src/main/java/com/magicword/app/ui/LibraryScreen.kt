@@ -70,6 +70,8 @@ fun LibraryScreen() {
     var showLibraryMenu by remember { mutableStateOf(false) }
     var showAddLibraryDialog by remember { mutableStateOf(false) }
     
+    var editingWord by remember { mutableStateOf<Word?>(null) }
+    
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -133,7 +135,11 @@ fun LibraryScreen() {
                 modifier = Modifier.padding(padding)
             ) {
                 items(words) { word ->
-                    WordItem(word, onDelete = { viewModel.deleteWord(word) })
+                    WordItem(
+                        word = word, 
+                        onDelete = { viewModel.deleteWord(word) },
+                        onClick = { editingWord = word }
+                    )
                 }
             }
         }
@@ -162,6 +168,19 @@ fun LibraryScreen() {
                 onConfirm = { name ->
                     viewModel.addLibrary(name)
                     showAddLibraryDialog = false
+                }
+            )
+        }
+        
+        // Word Edit Dialog
+        if (editingWord != null) {
+            WordDetailEditDialog(
+                word = editingWord!!,
+                onDismiss = { editingWord = null },
+                onSave = { updatedWord ->
+                    viewModel.updateWord(updatedWord)
+                    LogUtil.logFeature("UpdateWord", "Success", "{ \"word\": \"${updatedWord.word}\" }")
+                    editingWord = null
                 }
             )
         }
@@ -250,10 +269,12 @@ fun BulkImportContent(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun WordItem(word: Word, onDelete: () -> Unit) {
+fun WordItem(word: Word, onDelete: () -> Unit, onClick: () -> Unit) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier

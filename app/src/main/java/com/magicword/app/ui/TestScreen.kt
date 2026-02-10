@@ -33,9 +33,13 @@ import com.magicword.app.data.Word
 import com.magicword.app.data.AppDatabase
 import com.magicword.app.utils.LogUtil
 
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.launch
+
 @Composable
 fun TestScreen() {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf("选择题", "拼写", "听写")
     
     val context = LocalContext.current
@@ -45,6 +49,17 @@ fun TestScreen() {
     )
     val words by viewModel.allWords.collectAsState(initial = emptyList())
 
+    // State persistence using rememberSaveable for basic quiz state across tabs
+    // Note: Ideally this should be in a ViewModel, but rememberSaveable works for simple cases
+    // where we want to survive configuration changes and simple composition changes.
+    // However, for HorizontalPager in MainScreen, state might be lost if page is destroyed.
+    // Given user complaint "leaving resets", we need stronger persistence.
+    // Since we are reusing LibraryViewModel, let's keep it simple with rememberSaveable which survives process death too.
+    
+    val choiceQuizState = rememberSaveable(saver = QuizState.Saver) {
+        mutableStateOf(QuizState())
+    }
+    
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
@@ -60,22 +75,45 @@ fun TestScreen() {
         }
 
         when (selectedTab) {
-            0 -> QuizChoiceMode(words = words, onBack = {})
+            0 -> QuizChoiceMode(
+                words = words, 
+                state = choiceQuizState.value,
+                onStateChange = { choiceQuizState.value = it },
+                onBack = {}
+            )
             1 -> QuizSpellMode(words = words, onBack = {})
             2 -> DictationPlaceholder()
         }
     }
 }
 
-@Composable
-fun DictationPlaceholder() {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("听写模式开发中...")
+// Simple State Holder for Quiz
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+import androidx.compose.runtime.saveable.Saver
+
+@Parcelize
+data class QuizState(
+    val currentIndex: Int = 0,
+    val score: Int = 0,
+    val isFinished: Boolean = false,
+    val shuffledIndices: List<Int> = emptyList() // Store indices instead of full objects to be Parcelable
+) : Parcelable {
+    companion object {
+        val Saver = Saver<MutableState<QuizState>, QuizState>(
+            save = { it.value },
+            restore = { mutableStateOf(it) }
+        )
     }
 }
 
 @Composable
-fun QuizChoiceMode(words: List<Word>, onBack: () -> Unit) {
+fun QuizChoiceMode(
+    words: List<Word>, 
+    state: QuizState, 
+    onStateChange: (QuizState) -> Unit,
+    onBack: () -> Unit
+) {
     if (words.size < 4) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("词库单词不足4个，无法开始选择题测试！")
@@ -84,27 +122,45 @@ fun QuizChoiceMode(words: List<Word>, onBack: () -> Unit) {
         return
     }
 
-    var currentIndex by remember { mutableStateOf(0) }
-    var score by remember { mutableStateOf(0) }
-    var isFinished by remember { mutableStateOf(false) }
-    // Shuffle words only once when entering
-    val quizWords = remember { words.shuffled() }
-    
-    if (isFinished) {
+    // Initialize shuffled order if empty or size mismatch (re-init)
+    if (state.shuffledIndices.isEmpty() || state.shuffledIndices.size != words.size) {
+        // We need to trigger a state update, but side-effects in Composable body are bad.
+        // Use LaunchedEffect.
+        LaunchedEffect(words) {
+            if (words.isNotEmpty()) {
+                onStateChange(state.copy(shuffledIndices = words.indices.toList().shuffled()))
+            }
+        }
+    }
+
+    // If still empty after LaunchedEffect (e.g. first frame), show loading or return
+    if (state.shuffledIndices.isEmpty()) return
+
+    if (state.isFinished) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("测试结束！", style = MaterialTheme.typography.headlineLarge)
-            Text("得分: $score / ${quizWords.size}", style = MaterialTheme.typography.headlineMedium)
-            Button(onClick = onBack, modifier = Modifier.padding(top = 32.dp)) {
-                Text("返回菜单")
+            Text("得分: ${state.score} / ${words.size}", style = MaterialTheme.typography.headlineMedium)
+            Button(
+                onClick = { 
+                    // Reset
+                    onStateChange(QuizState(shuffledIndices = words.indices.toList().shuffled()))
+                }, 
+                modifier = Modifier.padding(top = 32.dp)
+            ) {
+                Text("重新开始")
             }
         }
     } else {
-        val currentWord = quizWords[currentIndex]
+        // Safe access
+        val currentWordIndex = state.shuffledIndices.getOrNull(state.currentIndex) ?: 0
+        val currentWord = words.getOrNull(currentWordIndex) ?: return
+
         // Generate options: correct answer + 3 random wrong answers
+        // We use remember with currentWord to avoid regenerating on every recomposition
         val options = remember(currentWord) {
             val wrongOptions = words.filter { it.id != currentWord.id }.shuffled().take(3)
             (wrongOptions + currentWord).shuffled()
@@ -112,14 +168,13 @@ fun QuizChoiceMode(words: List<Word>, onBack: () -> Unit) {
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Button(onClick = onBack) { Text("退出") } // Remove Exit button to simplify, use Tab switch to exit
                 Spacer(modifier = Modifier.weight(1f))
-                Text("进度: ${currentIndex + 1}/${quizWords.size}")
+                Text("进度: ${state.currentIndex + 1}/${words.size}")
             }
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Question area (scrollable if word is long)
+            // Question area
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -135,7 +190,7 @@ fun QuizChoiceMode(words: List<Word>, onBack: () -> Unit) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Options area (Scrollable to fix tablet display issue)
+            // Options area
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -144,11 +199,17 @@ fun QuizChoiceMode(words: List<Word>, onBack: () -> Unit) {
                 options.forEach { option ->
                     Button(
                         onClick = {
-                            if (option.id == currentWord.id) score++
-                            if (currentIndex < quizWords.size - 1) {
-                                currentIndex++
+                            val newScore = if (option.id == currentWord.id) state.score + 1 else state.score
+                            if (state.currentIndex < words.size - 1) {
+                                onStateChange(state.copy(
+                                    score = newScore,
+                                    currentIndex = state.currentIndex + 1
+                                ))
                             } else {
-                                isFinished = true
+                                onStateChange(state.copy(
+                                    score = newScore,
+                                    isFinished = true
+                                ))
                             }
                         },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
