@@ -43,9 +43,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 
+import com.magicword.app.ui.components.SlideInEntry
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen() {
-    val navController = rememberNavController()
+    val pagerState = rememberPagerState(pageCount = { 4 })
+    val scope = rememberCoroutineScope()
     
     // Navigation items
     val items = listOf(
@@ -69,21 +73,14 @@ fun MainScreen() {
         Scaffold(
             bottomBar = {
                 NavigationBar {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentDestination = navBackStackEntry?.destination
-                    
-                    items.forEach { screen ->
+                    items.forEachIndexed { index, screen ->
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.label) },
                             label = { Text(screen.label) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            selected = pagerState.currentPage == index,
                             onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                scope.launch {
+                                    pagerState.animateScrollToPage(index)
                                 }
                                 LogUtil.logFeature("TabSwitch", "Manual", "{ \"to\": \"${screen.label}\" }")
                             }
@@ -92,22 +89,18 @@ fun MainScreen() {
                 }
             }
         ) { innerPadding ->
-            NavHost(
-                navController = navController, 
-                startDestination = Screen.Words.route,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(Screen.Words.route) { 
-                    WordsScreen(onOpenSettings = { currentOverlay = "settings" }) 
-                }
-                composable(Screen.Search.route) { 
-                    SearchScreen() 
-                }
-                composable(Screen.Test.route) { 
-                    TestScreen() 
-                }
-                composable(Screen.Library.route) { 
-                    LibraryScreen() 
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                userScrollEnabled = true
+            ) { page ->
+                SlideInEntry {
+                    when (page) {
+                        0 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
+                        1 -> SearchScreen()
+                        2 -> TestScreen()
+                        3 -> LibraryScreen()
+                    }
                 }
             }
         }
