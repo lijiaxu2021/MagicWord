@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,6 +44,13 @@ import com.magicword.app.data.AppDatabase
 import com.magicword.app.data.Word
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.collectAsState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen() {
@@ -52,11 +60,55 @@ fun LibraryScreen() {
         factory = LibraryViewModelFactory(database.wordDao())
     )
     val words by viewModel.allWords.collectAsState(initial = emptyList())
+    val libraries by viewModel.allLibraries.collectAsState(initial = emptyList())
+    val currentLibraryId by viewModel.currentLibraryId.collectAsState()
+    
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showLibraryMenu by remember { mutableStateOf(false) }
+    var showAddLibraryDialog by remember { mutableStateOf(false) }
+    
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
     Scaffold(
+        topBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = libraries.find { it.id == currentLibraryId }?.name ?: "词库",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Box {
+                    IconButton(onClick = { showLibraryMenu = true }) {
+                        Icon(Icons.Default.List, contentDescription = "Switch Library")
+                    }
+                    DropdownMenu(
+                        expanded = showLibraryMenu,
+                        onDismissRequest = { showLibraryMenu = false }
+                    ) {
+                        libraries.forEach { lib ->
+                            DropdownMenuItem(
+                                text = { Text(lib.name) },
+                                onClick = {
+                                    viewModel.switchLibrary(lib.id)
+                                    showLibraryMenu = false
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("➕ 新建词库") },
+                            onClick = {
+                                showLibraryMenu = false
+                                showAddLibraryDialog = true
+                            }
+                        )
+                    }
+                }
+            }
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = { showBottomSheet = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Bulk Import")
@@ -69,7 +121,7 @@ fun LibraryScreen() {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("词库是空的，快去查词添加吧！")
+                Text("当前词库是空的，快去添加单词吧！")
             }
         } else {
             LazyColumn(
@@ -100,7 +152,44 @@ fun LibraryScreen() {
                 )
             }
         }
+        
+        if (showAddLibraryDialog) {
+            AddLibraryDialog(
+                onDismiss = { showAddLibraryDialog = false },
+                onConfirm = { name ->
+                    viewModel.addLibrary(name)
+                    showAddLibraryDialog = false
+                }
+            )
+        }
     }
+}
+
+@Composable
+fun AddLibraryDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建词库") },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("词库名称") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { if (name.isNotBlank()) onConfirm(name) }) {
+                Text("创建")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 @Composable

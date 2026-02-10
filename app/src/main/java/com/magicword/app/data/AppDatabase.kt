@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Word::class], version = 1, exportSchema = false)
+@Database(entities = [Word::class, Library::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun wordDao(): WordDao
 
@@ -18,8 +20,17 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "easyword_native.db"
-                ).build()
+                    "word_database"
+                )
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        super.onCreate(db)
+                        // Pre-populate default library
+                        db.execSQL("INSERT INTO libraries (id, name, description, createdAt) VALUES (1, '默认词库', 'Default Library', ${System.currentTimeMillis()})")
+                    }
+                })
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }
