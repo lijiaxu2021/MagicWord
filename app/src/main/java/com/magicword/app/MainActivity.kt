@@ -12,6 +12,10 @@ import com.magicword.app.ui.theme.EasyWordTheme
 
 import com.magicword.app.utils.LogUtil
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.ExistingPeriodicWorkPolicy
+import com.magicword.app.worker.SyncWorker
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -29,7 +33,7 @@ class MainActivity : ComponentActivity() {
             val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()
             WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "MagicWordSync",
-                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.KEEP,
                 syncRequest
             )
             
