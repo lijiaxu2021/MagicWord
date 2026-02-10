@@ -57,6 +57,20 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
         }
     }
 
+    // Helper for retry
+    private suspend fun <T> retry(times: Int = 3, block: suspend () -> T): T {
+        var lastException: Exception? = null
+        repeat(times) {
+            try {
+                return block()
+            } catch (e: Exception) {
+                lastException = e
+                kotlinx.coroutines.delay(1000)
+            }
+        }
+        throw lastException!!
+    }
+
     fun bulkImport(text: String) {
         if (text.isBlank()) return
         
@@ -79,7 +93,14 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
                     temperature = 0.1
                 )
                 
-                val extractResponse = RetrofitClient.api.chat(extractRequest)
+                // Retry for extraction
+                val extractResponse = try {
+                    retry(3) { RetrofitClient.api.chat(extractRequest) }
+                } catch (e: Exception) {
+                    _importLogs.value = _importLogs.value + "❌ 提取阶段彻底失败: ${e.message}"
+                    return@launch
+                }
+                
                 val content = extractResponse.choices.first().message.content
                 
                 // Parse JSON array from content
@@ -127,7 +148,8 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
                     )
 
                     try {
-                        val chunkResponse = RetrofitClient.api.chat(chunkRequest)
+                        // Retry for chunk analysis
+                        val chunkResponse = retry(3) { RetrofitClient.api.chat(chunkRequest) }
                         val chunkContent = chunkResponse.choices.first().message.content
                         
                         val chunkJsonStart = chunkContent.indexOf('[')
@@ -145,7 +167,7 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
                             _importLogs.value = _importLogs.value + "⚠️ 解析失败: AI 返回格式错误"
                         }
                     } catch (e: Exception) {
-                        _importLogs.value = _importLogs.value + "❌ 网络/解析错误: ${e.message}"
+                        _importLogs.value = _importLogs.value + "❌ 本批次失败 (重试3次无效): ${e.message}"
                     }
                 }
                 _importLogs.value = _importLogs.value + "🎉 所有任务完成！"

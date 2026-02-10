@@ -229,6 +229,8 @@ fun BulkImportContent(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
         .imePadding()
         .navigationBarsPadding()
     ) {
+        Spacer(modifier = Modifier.weight(1f)) // Push content up when keyboard opens
+        
         Text("AI 批量导入", style = MaterialTheme.typography.titleLarge)
         Text("输入单词列表（用逗号或换行分隔）", style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(16.dp))

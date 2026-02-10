@@ -30,8 +30,8 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun EasyWordTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Disable dynamic color to enforce our custom Light Blue theme
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
