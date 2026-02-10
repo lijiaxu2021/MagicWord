@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyWord - AI 驱动的沉浸式背词应用</title>
+    <meta name="description" content="EasyWord (MagicWord) 是一款基于 Jetpack Compose 和 AI 驱动的现代化 Android 背词应用。">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0288D1; /* Material Light Blue 700 */
+            --secondary-color: #B3E5FC; /* Material Light Blue 100 */
+            --accent-color: #03A9F4; /* Material Light Blue 500 */
+            --text-dark: #333;
+            --text-light: #666;
+            --white: #ffffff;
+            --bg-light: #F5FAFF; /* Very light blue background */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--white);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 1rem 5%;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            margin-left: 2rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(2, 136, 209, 0.3);
+            background-color: #0277BD;
+        }
+
+        .btn-outline {
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 1rem;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .btn-outline:hover {
+            background-color: var(--secondary-color);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 5% 5rem;
+            background: linear-gradient(135deg, #E1F5FE 0%, #FFFFFF 100%);
+            display: flex;
+            align-items: center;
+            min-height: 90vh;
+        }
+
+        .hero-content {
+            flex: 1;
+            padding-right: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: #01579B;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+        }
+
+        .hero-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Phone Mockup (CSS only) */
+        .phone-mockup {
+            width: 300px;
+            height: 600px;
+            background-color: #fff;
+            border: 12px solid #333;
+            border-radius: 40px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .phone-notch {
+            width: 150px;
+            height: 25px;
+            background-color: #333;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 10;
+        }
+
+        .app-screen {
+            flex: 1;
+            background-color: #FAFAFA;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .mock-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 90%;
+            margin-bottom: 20px;
+        }
+
+        /* Features */
+        .features {
+            padding: 5rem 5%;
+            background-color: var(--bg-light);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-top: 4px solid var(--accent-color);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .feature-card p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            padding: 4rem 5%;
+            text-align: center;
+        }
+
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .tech-tag {
+            background-color: #E3F2FD;
+            color: #0277BD;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #F5F5F5;
+            padding: 3rem 5%;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+
+        .footer-links {
+            margin: 1.5rem 0;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            margin: 0 10px;
+            text-decoration: none;
+            font-size: 1.5rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .copyright {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding-top: 6rem;
+            }
+
+            .hero-content {
+                padding-right: 0;
+                margin-bottom: 3rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-links {
+                display: none; /* Simple hide for mobile for now */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-layer-group"></i> EasyWord
+        </div>
+        <nav class="nav-links">
+            <a href="#features">功能特性</a>
+            <a href="#tech">技术架构</a>
+            <a href="https://github.com/lijiaxu2021/MagicWord" target="_blank">GitHub</a>
+        </nav>
+        <a href="https://github.com/lijiaxu2021/MagicWord/releases" class="btn-primary" target="_blank">
+            <i class="fa-brands fa-android"></i> 下载 APK
+        </a>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>AI 驱动的<br>沉浸式单词记忆</h1>
+            <p>基于 Jetpack Compose 构建，集成 Qwen 大模型。智能语义解析、词根助记、批量导入，让背单词变得前所未有的简单与高效。</p>
+            <div>
+                <a href="https://github.com/lijiaxu2021/MagicWord/releases" class="btn-primary">立即下载 v0.0.2</a>
+                <a href="https://github.com/lijiaxu2021/MagicWord" class="btn-outline">
+                    <i class="fa-brands fa-github"></i> 查看源码
+                </a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <div class="phone-mockup">
+                <div class="phone-notch"></div>
+                <div class="app-screen">
+                    <!-- CSS Simulated UI -->
+                    <h2 style="color: #0277BD; margin-bottom: 5px;">EasyWord</h2>
+                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 30px;">Default Library</p>
+                    
+                    <div class="mock-card">
+                        <h1 style="font-size: 2.5rem; color: #333; margin-bottom: 10px;">Epiphany</h1>
+                        <p style="color: #666; font-style: italic; margin-bottom: 15px;">/ɪˈpɪf.ən.i/</p>
+                        <div style="background: #E1F5FE; padding: 10px; border-radius: 8px; font-size: 0.9rem; color: #0277BD;">
+                            n. 顿悟；突然的感悟
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <div style="width: 50px; height: 50px; background: #E1F5FE; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0277BD;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </div>
+                        <div style="width: 50px; height: 50px; background: #E1F5FE; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0277BD;">
+                            <i class="fa-solid fa-rotate"></i>
+                        </div>
+                        <div style="width: 50px; height: 50px; background: #E1F5FE; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0277BD;">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="section-title">
+            <h2>核心功能</h2>
+            <p>结合 AI 智能算法与现代 Material Design 设计，提供极致体验。</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <i class="fa-solid fa-mobile-screen feature-icon"></i>
+                <h3>沉浸式学习</h3>
+                <p>全屏卡片设计，支持手势滑动与 3D 翻转。专注记忆本身，摒弃繁杂干扰。</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-robot feature-icon"></i>
+                <h3>AI 智能解析</h3>
+                <p>内置 Qwen 大模型，输入单词即可获得音标、中英释义、例句及<b>独家 AI 记忆法</b>。</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-file-import feature-icon"></i>
+                <h3>批量导入</h3>
+                <p>粘贴文章或乱序文本，AI 自动提取生词并批量生成词条，构建专属词库。</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-pen-to-square feature-icon"></i>
+                <h3>多模式测试</h3>
+                <p>包含选择题（即时反馈）与拼写测试模式。自动记录错题与正确率，科学复习。</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-book-open feature-icon"></i>
+                <h3>多词库管理</h3>
+                <p>支持创建多个词库（如四级、雅思、工作），一键切换场景，支持 JSON 导出备份。</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-chart-line feature-icon"></i>
+                <h3>数据统计</h3>
+                <p>完整的测试历史记录，直观展示学习进度与记忆曲线，让进步看得见。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section id="tech" class="tech-stack">
+        <div class="section-title">
+            <h2>技术架构</h2>
+            <p>采用 Google 推荐的最新 Android 开发技术栈。</p>
+        </div>
+        <div class="tech-tags">
+            <div class="tech-tag">Kotlin</div>
+            <div class="tech-tag">Jetpack Compose</div>
+            <div class="tech-tag">Material Design 3</div>
+            <div class="tech-tag">MVVM Architecture</div>
+            <div class="tech-tag">Room Database</div>
+            <div class="tech-tag">Retrofit + OkHttp</div>
+            <div class="tech-tag">AI / LLM Integration</div>
+            <div class="tech-tag">Coroutines & Flow</div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="logo" style="justify-content: center; margin-bottom: 1rem;">
+            EasyWord
+        </div>
+        <p>让记忆更简单，让学习更智能。</p>
+        <div class="footer-links">
+            <a href="https://github.com/lijiaxu2021/MagicWord"><i class="fa-brands fa-github"></i></a>
+            <a href="#"><i class="fa-brands fa-twitter"></i></a>
+            <a href="#"><i class="fa-solid fa-envelope"></i></a>
+        </div>
+        <div class="copyright">
+            &copy; 2026 EasyWord (MagicWord). Open Source under MIT License.
+        </div>
+    </footer>
+
+</body>
+</html>
