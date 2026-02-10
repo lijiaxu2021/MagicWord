@@ -57,6 +57,9 @@ class SyncWorker(
                         }
                     }
                     LogUtil.logFeature("Sync", "Success", "Pulled ${remoteWords.size}")
+                    
+                    // Update Last Sync Time
+                    AuthManager.saveLastSyncTime(applicationContext, System.currentTimeMillis())
                 }
             } catch (e: Exception) {
                 LogUtil.logFeature("Sync", "PullError", e.message ?: "Net Error")

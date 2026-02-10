@@ -16,6 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 
 import com.magicword.app.utils.AuthManager
 
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
@@ -29,6 +33,21 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
     // Real User Data
     val username = AuthManager.getUsername(context) ?: "User"
     val email = "MagicWord User"
+    
+    // Auto-refresh Last Sync Time
+    var lastSyncTimeDisplay by remember { mutableStateOf("从未同步") }
+    
+    LaunchedEffect(Unit) {
+        // Poll every second to update display (or just read once)
+        while(true) {
+            val ts = AuthManager.getLastSyncTime(context)
+            if (ts > 0) {
+                val sdf = SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault())
+                lastSyncTimeDisplay = sdf.format(Date(ts))
+            }
+            kotlinx.coroutines.delay(1000)
+        }
+    }
     
     // Stats
     val totalWords = words.size
@@ -94,25 +113,20 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
             // For simplicity, let's read from LogUtil if possible, or just show a status)
             // Ideally, we should persist sync logs in DB. 
             // But user said "sync log is useless", so let's make it useful: Show Last Sync Time & Status.
-            
-            val lastSyncTime = remember { 
-                // Mock for now, implementing real persistence requires DB change or Prefs
-                "刚刚" 
-            }
-            
-            Card(
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("同步状态", style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("✅ 上次同步: $lastSyncTime", style = MaterialTheme.typography.bodyMedium)
-                    Text("☁️ 云端状态: 正常", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("每10秒自动同步中...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                }
-            }
+             
+             Card(
+                 modifier = Modifier.fillMaxWidth().height(120.dp),
+                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+             ) {
+                 Column(modifier = Modifier.padding(16.dp)) {
+                     Text("同步状态", style = MaterialTheme.typography.titleSmall)
+                     Spacer(modifier = Modifier.height(8.dp))
+                     Text("✅ 上次同步: $lastSyncTimeDisplay", style = MaterialTheme.typography.bodyMedium)
+                     Text("☁️ 云端状态: 正常", style = MaterialTheme.typography.bodyMedium)
+                     Spacer(modifier = Modifier.height(8.dp))
+                     Text("每10秒自动同步中...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                 }
+             }
             
             Spacer(modifier = Modifier.height(16.dp))
             

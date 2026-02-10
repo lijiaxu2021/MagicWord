@@ -72,6 +72,7 @@ fun MainScreen() {
             while (true) {
                 delay(10000) // 10 seconds
                 try {
+                     LogUtil.logFeature("SyncLoop", "Trigger", "Enqueuing SyncWorker")
                      WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
                      // Optional: Log/Toast "Syncing..."
                 } catch (e: Exception) {

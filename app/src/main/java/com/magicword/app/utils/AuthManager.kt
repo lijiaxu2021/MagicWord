@@ -32,4 +32,16 @@ object AuthManager {
     fun isLoggedIn(context: Context): Boolean {
         return getUserId(context) != -1
     }
+
+    private const val KEY_LAST_SYNC_TIME = "last_sync_time"
+
+    fun saveLastSyncTime(context: Context, timestamp: Long) {
+        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit {
+            putLong(KEY_LAST_SYNC_TIME, timestamp)
+        }
+    }
+
+    fun getLastSyncTime(context: Context): Long {
+        return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).getLong(KEY_LAST_SYNC_TIME, 0)
+    }
 }
