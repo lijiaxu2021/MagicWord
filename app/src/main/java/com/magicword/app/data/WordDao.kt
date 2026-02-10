@@ -41,4 +41,14 @@ interface WordDao {
 
     @Query("SELECT * FROM words")
     suspend fun getAllWordsList(): List<Word>
+
+    // Test History
+    @Insert
+    suspend fun insertTestHistory(history: TestHistory)
+
+    @Query("SELECT * FROM test_history ORDER BY timestamp DESC")
+    fun getAllTestHistory(): Flow<List<TestHistory>>
+    
+    @Query("UPDATE words SET reviewCount = reviewCount + 1, correctCount = correctCount + :correct WHERE id = :id")
+    suspend fun updateWordStats(id: Int, correct: Int)
 }

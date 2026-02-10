@@ -49,23 +49,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 
+import androidx.compose.material.icons.filled.History
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @Composable
 fun TestScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf("选择题", "拼写")
+    var showHistory by remember { mutableStateOf(false) }
     
-    val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
-    val database = AppDatabase.getDatabase(context)
-    val viewModel: LibraryViewModel = viewModel(
-        factory = LibraryViewModelFactory(database.wordDao(), prefs)
-    )
-    val allWords by viewModel.allWords.collectAsState(initial = emptyList())
-    val testCandidates by viewModel.testCandidates.collectAsState()
+    // ... (rest of setup)
     
-    // Use testCandidates if available (Testing Selected), otherwise allWords (Testing Library)
-    val words = testCandidates ?: allWords
-
     // State persistence using rememberSaveable for basic quiz state across tabs
     // Note: Ideally this should be in a ViewModel, but rememberSaveable works for simple cases
     // where we want to survive configuration changes and simple composition changes.
@@ -90,49 +85,77 @@ fun TestScreen() {
             selectedTab = targetIndex
         }
     }
+    
+    if (showHistory) {
+        TestHistoryDialog(
+            viewModel = viewModel,
+            onDismiss = { showHistory = false }
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Show Test Source Info
-        if (testCandidates != null) {
-            Box(modifier = Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+        // Show Test Source Info and History Button
+        Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+            if (testCandidates != null) {
                 Text(
                     text = "正在测试选中单词 (${testCandidates!!.size}个)", 
                     style = MaterialTheme.typography.labelMedium, 
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.CenterStart)
                 )
-                // Option to clear selection and test full library?
                 IconButton(
                     onClick = { viewModel.setTestCandidates(null) },
-                    modifier = Modifier.align(Alignment.CenterEnd)
+                    modifier = Modifier.align(Alignment.Center)
                 ) {
                     Icon(androidx.compose.material.icons.Icons.Default.Close, "Exit Selection Mode")
                 }
             }
-        }
-
-        TabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { 
-                        selectedTab = index 
-                        LogUtil.logFeature("TestTabSwitch", "Manual", "{ \"tab\": \"$title\" }")
-                    },
-                    text = { Text(title) }
-                )
+            
+            IconButton(
+                onClick = { showHistory = true },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(Icons.Default.History, "Test History")
             }
         }
 
-        when (selectedTab) {
-            0 -> QuizChoiceMode(
-                words = words, 
-                state = choiceQuizState.value,
-                onStateChange = { choiceQuizState.value = it },
-                onBack = {}
-            )
-            1 -> QuizSpellMode(words = words, onBack = {})
+        TabRow(selectedTabIndex = selectedTab) {
+            // ...
         }
+        
+        // ...
     }
+}
+
+@Composable
+fun TestHistoryDialog(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
+    val history by viewModel.testHistory.collectAsState(initial = emptyList())
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("测试历史") },
+        text = {
+            LazyColumn(modifier = Modifier.height(300.dp)) {
+                if (history.isEmpty()) {
+                    item { Text("暂无测试记录") }
+                } else {
+                    items(history) { item ->
+                        val date = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(item.timestamp))
+                        val percent = if (item.totalQuestions > 0) (item.correctCount * 100 / item.totalQuestions) else 0
+                        
+                        ListItem(
+                            headlineContent = { Text("${if(item.testType == "CHOICE") "选择题" else "拼写"} - ${percent}% 正确") },
+                            supportingContent = { Text("$date · ${item.correctCount}/${item.totalQuestions} 题 · 耗时 ${item.durationSeconds}秒") }
+                        )
+                        Divider()
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("关闭") }
+        }
+    )
 }
 
 // Simple State Holder for Quiz

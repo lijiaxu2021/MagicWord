@@ -30,6 +30,8 @@ import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.content.SharedPreferences
+import com.magicword.app.data.TestHistory
 
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
@@ -134,6 +136,22 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
 
     fun setTestCandidates(words: List<Word>?) {
         _testCandidates.value = words
+    }
+    
+    // Test History
+    val testHistory: Flow<List<TestHistory>> = wordDao.getAllTestHistory()
+    
+    fun saveTestResult(history: TestHistory) {
+        viewModelScope.launch {
+            wordDao.insertTestHistory(history)
+        }
+    }
+    
+    // Update word stats based on test result
+    fun updateWordStats(wordId: Int, isCorrect: Boolean) {
+        viewModelScope.launch {
+            wordDao.updateWordStats(wordId, if (isCorrect) 1 else 0)
+        }
     }
 
     fun deleteWord(word: Word) {
