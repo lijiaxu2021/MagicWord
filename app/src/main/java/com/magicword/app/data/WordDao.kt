@@ -36,6 +36,9 @@ interface WordDao {
     @Query("UPDATE libraries SET lastIndex = :index WHERE id = :libraryId")
     suspend fun updateLibraryLastIndex(libraryId: Int, index: Int)
 
+    @Query("SELECT * FROM words WHERE libraryId = :libraryId")
+    suspend fun getWordsByLibraryList(libraryId: Int): List<Word>
+
     @Query("SELECT * FROM words")
     suspend fun getAllWordsList(): List<Word>
 }

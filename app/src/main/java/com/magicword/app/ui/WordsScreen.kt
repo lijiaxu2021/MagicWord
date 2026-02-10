@@ -33,6 +33,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WordsScreen(onOpenSettings: () -> Unit) {
@@ -91,6 +95,52 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Bulk Import Sheet State
     var showImportSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    // Export/Import JSON Logic
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let {
+            // Write to file (ViewModel needs Context or ContentResolver to write to URI)
+            // Simplified: ViewModel writes to internal file, then we copy to URI here or pass URI to VM.
+            // Better: Pass URI to ViewModel.
+            // Since we added `exportLibrary(context, id)` which writes to internal file, we need to adapt it or add new method.
+            // Let's modify VM to return the File or String, then write here? 
+            // Or just pass URI to VM and let it write.
+            // For now, let's use the VM's existing `exportLibrary` which saves to app data, then copy.
+            // Actually, `exportLibrary` in VM is for internal logic. Let's add `exportToUri` in VM or handle here.
+            
+            // To keep it simple and clean, let's implement `exportToUri` in VM or just read the internal file and write to URI.
+            viewModel.exportLibrary(context, currentLibraryId)
+            // After export, copy internal file to URI (hacky but works with existing VM method)
+            // Ideally VM should take OutputStream.
+            
+            // Wait, I implemented `exportLibrary` to write to ExternalFilesDir.
+            // Let's rely on that for "Export" button (Share intent).
+            // But user asked for "Export Button" in Library Sheet.
+            // If we use system picker (CreateDocument), we get a URI.
+            
+            // Let's use a simpler approach: VM exports to string, UI writes to URI.
+            // We need a suspend function in VM to get JSON string.
+            // `wordDao.getWordsByLibraryList` is suspend.
+            
+            scope.launch {
+                val json = viewModel.getLibraryJson(currentLibraryId ?: -1)
+                context.contentResolver.openOutputStream(it)?.use { output ->
+                    output.write(json.toByteArray())
+                }
+            }
+        }
+    }
+    
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            scope.launch {
+                context.contentResolver.openInputStream(it)?.use { input ->
+                    val json = input.bufferedReader().readText()
+                    viewModel.importLibraryJson(json)
+                }
+            }
+        }
+    }
 
     // Sync Pager State with List Scroll
     LaunchedEffect(isListMode) {
@@ -394,6 +444,30 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                         showLibrarySheet = false
                     }, modifier = Modifier.fillMaxWidth()) {
                         Text("新建词库")
+                    }
+                }
+                
+                // Export/Import Buttons
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Button(
+                            onClick = { 
+                                showLibrarySheet = false
+                                exportLauncher.launch("magicword_export_${System.currentTimeMillis()}.json")
+                            }, 
+                            modifier = Modifier.weight(1f).padding(end = 4.dp)
+                        ) {
+                            Text("导出当前")
+                        }
+                        Button(
+                            onClick = { 
+                                showLibrarySheet = false
+                                importLauncher.launch(arrayOf("application/json"))
+                            }, 
+                            modifier = Modifier.weight(1f).padding(start = 4.dp)
+                        ) {
+                            Text("导入词库")
+                        }
                     }
                 }
             }

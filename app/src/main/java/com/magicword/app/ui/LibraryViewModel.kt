@@ -21,7 +21,15 @@ import com.magicword.app.network.Message
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
-import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.File
+import java.io.FileWriter
+import java.io.FileReader
+import android.content.Context
+import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
@@ -178,6 +186,77 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             }
         }
         throw lastException!!
+    }
+
+    // Helper to get JSON string for export
+    suspend fun getLibraryJson(libraryId: Int): String {
+        val wordsToExport = wordDao.getWordsByLibraryList(libraryId)
+        return Gson().toJson(wordsToExport)
+    }
+
+    // Export Library to JSON
+    fun exportLibrary(context: Context, libraryId: Int? = null) {
+        viewModelScope.launch {
+            try {
+                _importLogs.value = listOf("正在导出...")
+                _isImporting.value = true
+                
+                val wordsToExport = if (libraryId != null) {
+                    wordDao.getWordsByLibraryList(libraryId)
+                } else {
+                    // Export all if no specific library (or multi-export logic)
+                    // For now support single library export based on current view
+                    wordDao.getWordsByLibraryList(_currentLibraryId.value)
+                }
+                
+                val json = Gson().toJson(wordsToExport)
+                val fileName = "magicword_export_${System.currentTimeMillis()}.json"
+                val file = File(context.getExternalFilesDir(null), fileName)
+                
+                withContext(Dispatchers.IO) {
+                    FileWriter(file).use { it.write(json) }
+                }
+                
+                _importLogs.value = listOf("✅ 导出成功: ${file.absolutePath}")
+                // In real app, trigger share intent here
+            } catch (e: Exception) {
+                _importLogs.value = listOf("❌ 导出失败: ${e.message}")
+            } finally {
+                _isImporting.value = false
+            }
+        }
+    }
+
+    // Import Library from JSON String
+    fun importLibraryJson(jsonContent: String) {
+        viewModelScope.launch {
+            try {
+                _importLogs.value = listOf("正在导入...")
+                _isImporting.value = true
+                
+                val type = object : TypeToken<List<Word>>() {}.type
+                val words: List<Word> = Gson().fromJson(jsonContent, type)
+                
+                if (words.isNotEmpty()) {
+                    // Create a new library for import
+                    val newLibId = System.currentTimeMillis().toInt() // Simple ID gen
+                    // Insert library first (assuming auto-gen ID logic or insert raw)
+                    // Simplified: Insert words with current library ID or new one
+                    // Let's add to CURRENT library for simplicity as requested "Import"
+                    
+                    words.forEach { word ->
+                        wordDao.insertWord(word.copy(id = 0, libraryId = _currentLibraryId.value))
+                    }
+                    _importLogs.value = listOf("✅ 成功导入 ${words.size} 个单词")
+                } else {
+                    _importLogs.value = listOf("⚠️ JSON 内容为空或格式错误")
+                }
+            } catch (e: Exception) {
+                _importLogs.value = listOf("❌ 导入失败: ${e.message}")
+            } finally {
+                _isImporting.value = false
+            }
+        }
     }
 
     fun bulkImport(text: String) {
