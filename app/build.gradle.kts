@@ -22,20 +22,20 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            // Use standard debug keystore for consistent signing across debug/release builds
-            // This allows installing updates without uninstalling previous versions
-            storeFile = rootProject.file("app/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
-    }
+    // signingConfigs {
+    //    create("release") {
+    //        // Use standard debug keystore for consistent signing across debug/release builds
+    //        // This allows installing updates without uninstalling previous versions
+    //        storeFile = rootProject.file("app/debug.keystore")
+    //        storePassword = "android"
+    //        keyAlias = "androiddebugkey"
+    //        keyPassword = "android"
+    //    }
+    // }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release") // Enable consistent signing
+            // signingConfig = signingConfigs.getByName("release") // Enable consistent signing
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -43,7 +43,7 @@ android {
             )
         }
         debug {
-            signingConfig = signingConfigs.getByName("release") // Use same key for debug
+            // signingConfig = signingConfigs.getByName("release") // Use same key for debug
         }
     }
     compileOptions {
