@@ -5,7 +5,7 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface SiliconFlowApi {
-    @POST("v1/chat/completions")
+    @POST("chat/completions")
     suspend fun chat(@Body request: AiRequest): AiResponse
 }
 
