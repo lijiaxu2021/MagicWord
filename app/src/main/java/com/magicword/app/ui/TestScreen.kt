@@ -53,6 +53,9 @@ import androidx.compose.material.icons.filled.History
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
 
 @Composable
 fun TestScreen() {
@@ -173,10 +176,6 @@ data class QuizState(
         )
     }
 }
-
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.delay
 
 @Composable
 fun QuizChoiceMode(
