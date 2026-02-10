@@ -188,29 +188,23 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         throw lastException!!
     }
 
-    // Helper to get JSON string for export
-    suspend fun getLibraryJson(libraryId: Int): String {
-        val wordsToExport = wordDao.getWordsByLibraryList(libraryId)
-        return Gson().toJson(wordsToExport)
-    }
-
-    // Export Library to JSON
-    fun exportLibrary(context: Context, libraryId: Int? = null) {
+    // Export Library to JSON (Supports multiple libraries)
+    fun exportLibrary(context: Context, libraryIds: List<Int>?) {
         viewModelScope.launch {
             try {
                 _importLogs.value = listOf("正在导出...")
                 _isImporting.value = true
                 
-                val wordsToExport = if (libraryId != null) {
-                    wordDao.getWordsByLibraryList(libraryId)
-                } else {
-                    // Export all if no specific library (or multi-export logic)
-                    // For now support single library export based on current view
-                    wordDao.getWordsByLibraryList(_currentLibraryId.value)
+                // Fetch words based on libraryIds (or current if null/empty)
+                val targetIds = if (libraryIds.isNullOrEmpty()) listOf(_currentLibraryId.value) else libraryIds
+                val wordsToExport = mutableListOf<Word>()
+                
+                targetIds.forEach { id ->
+                    wordsToExport.addAll(wordDao.getWordsByLibraryList(id))
                 }
                 
                 val json = Gson().toJson(wordsToExport)
-                val fileName = "magicword_export_${System.currentTimeMillis()}.json"
+                val fileName = "magicword_export_${if(targetIds.size > 1) "multi" else targetIds[0]}_${System.currentTimeMillis()}.json"
                 val file = File(context.getExternalFilesDir(null), fileName)
                 
                 withContext(Dispatchers.IO) {
@@ -218,13 +212,23 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 }
                 
                 _importLogs.value = listOf("✅ 导出成功: ${file.absolutePath}")
-                // In real app, trigger share intent here
             } catch (e: Exception) {
                 _importLogs.value = listOf("❌ 导出失败: ${e.message}")
             } finally {
                 _isImporting.value = false
             }
         }
+    }
+
+    // Helper to get JSON string for export (Supports multiple)
+    suspend fun getLibraryJson(libraryIds: List<Int>?): String {
+        val targetIds = if (libraryIds.isNullOrEmpty()) listOf(_currentLibraryId.value) else libraryIds
+        val wordsToExport = mutableListOf<Word>()
+        
+        targetIds.forEach { id ->
+            wordsToExport.addAll(wordDao.getWordsByLibraryList(id))
+        }
+        return Gson().toJson(wordsToExport)
     }
 
     // Import Library from JSON String

@@ -99,34 +99,16 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Export/Import JSON Logic
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let {
-            // Write to file (ViewModel needs Context or ContentResolver to write to URI)
-            // Simplified: ViewModel writes to internal file, then we copy to URI here or pass URI to VM.
-            // Better: Pass URI to ViewModel.
-            // Since we added `exportLibrary(context, id)` which writes to internal file, we need to adapt it or add new method.
-            // Let's modify VM to return the File or String, then write here? 
-            // Or just pass URI to VM and let it write.
-            // For now, let's use the VM's existing `exportLibrary` which saves to app data, then copy.
-            // Actually, `exportLibrary` in VM is for internal logic. Let's add `exportToUri` in VM or handle here.
-            
-            // To keep it simple and clean, let's implement `exportToUri` in VM or just read the internal file and write to URI.
-            viewModel.exportLibrary(context, currentLibraryId)
-            // After export, copy internal file to URI (hacky but works with existing VM method)
-            // Ideally VM should take OutputStream.
-            
-            // Wait, I implemented `exportLibrary` to write to ExternalFilesDir.
-            // Let's rely on that for "Export" button (Share intent).
-            // But user asked for "Export Button" in Library Sheet.
-            // If we use system picker (CreateDocument), we get a URI.
-            
-            // Let's use a simpler approach: VM exports to string, UI writes to URI.
-            // We need a suspend function in VM to get JSON string.
-            // `wordDao.getWordsByLibraryList` is suspend.
-            
             scope.launch {
-                val json = viewModel.getLibraryJson(currentLibraryId ?: -1)
+                // If selectedExportLibraries is empty, export current library only.
+                // Otherwise export all selected libraries.
+                val targetIds = if (selectedExportLibraries.isEmpty()) null else selectedExportLibraries.toList()
+                val json = viewModel.getLibraryJson(targetIds)
                 context.contentResolver.openOutputStream(it)?.use { output ->
                     output.write(json.toByteArray())
                 }
+                // Clear selection after export
+                selectedExportLibraries = emptySet()
             }
         }
     }
@@ -421,23 +403,63 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Add Library Dialog State
     var showAddLibraryDialog by remember { mutableStateOf(false) }
 
+    // Export Library Selection State
+    var selectedExportLibraries by remember { mutableStateOf(setOf<Int>()) }
+
     // Library Switcher Bottom Sheet
     if (showLibrarySheet) {
         ModalBottomSheet(onDismissRequest = { showLibrarySheet = false }) {
             LazyColumn(modifier = Modifier.padding(16.dp)) {
+                item {
+                     // Select All Header for Export
+                     Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                     ) {
+                         Text("选择词库 (${libraries.size})", style = MaterialTheme.typography.titleMedium)
+                         TextButton(onClick = {
+                             selectedExportLibraries = if (selectedExportLibraries.size == libraries.size) {
+                                 emptySet()
+                             } else {
+                                 libraries.map { it.id }.toSet()
+                             }
+                         }) {
+                             Text(if (selectedExportLibraries.size == libraries.size) "全不选" else "全选")
+                         }
+                     }
+                }
+                
                 items(libraries) { lib ->
-                    ListItem(
-                        headlineContent = { Text(lib.name) },
-                        modifier = Modifier.clickable {
-                            viewModel.switchLibrary(lib.id)
-                            showLibrarySheet = false
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                             // If clicking item, just switch (default behavior)
+                             viewModel.switchLibrary(lib.id)
+                             showLibrarySheet = false
                         },
-                        trailingContent = {
-                            if (lib.id == currentLibraryId) Icon(Icons.Default.CheckCircle, "Selected", tint = MaterialTheme.colorScheme.primary)
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedExportLibraries.contains(lib.id),
+                            onCheckedChange = { checked ->
+                                selectedExportLibraries = if (checked) {
+                                    selectedExportLibraries + lib.id
+                                } else {
+                                    selectedExportLibraries - lib.id
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(lib.name)
                         }
-                    )
+                        if (lib.id == currentLibraryId) {
+                            Icon(Icons.Default.CheckCircle, "Selected", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
                 item {
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { 
                         // Instead of auto-adding, show dialog
                         showAddLibraryDialog = true
@@ -449,15 +471,19 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 
                 // Export/Import Buttons
                 item {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Button(
                             onClick = { 
                                 showLibrarySheet = false
-                                exportLauncher.launch("magicword_export_${System.currentTimeMillis()}.json")
+                                exportLauncher.launch("magicword_export_${if(selectedExportLibraries.size > 1) "multi" else "single"}_${System.currentTimeMillis()}.json")
                             }, 
-                            modifier = Modifier.weight(1f).padding(end = 4.dp)
+                            modifier = Modifier.weight(1f).padding(end = 4.dp),
+                            enabled = selectedExportLibraries.isNotEmpty() || currentLibraryId != 0 // Fallback to current if none selected? User said "Select check box". Let's enforce selection for multi, or default to current.
+                            // Actually user said: "Check box on right".
+                            // Let's assume if selection is empty, we export CURRENT. If selection not empty, export SELECTED.
                         ) {
-                            Text("导出当前")
+                            Text(if (selectedExportLibraries.isEmpty()) "导出当前" else "导出选中 (${selectedExportLibraries.size})")
                         }
                         Button(
                             onClick = { 
