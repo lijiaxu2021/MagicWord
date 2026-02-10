@@ -40,6 +40,7 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.MutableState
+import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun TestScreen() {
@@ -221,8 +222,6 @@ fun QuizChoiceMode(
         }
     }
 }
-
-import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun QuizSpellMode(words: List<Word>, onBack: () -> Unit) {
