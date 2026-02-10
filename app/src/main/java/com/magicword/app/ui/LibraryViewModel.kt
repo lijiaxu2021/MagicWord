@@ -18,6 +18,9 @@ import com.magicword.app.network.RetrofitClient
 import com.magicword.app.network.AiRequest
 import com.magicword.app.network.Message
 
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+
 class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(1)
     val currentLibraryId: StateFlow<Int> = _currentLibraryId.asStateFlow()
@@ -40,17 +43,10 @@ class LibraryViewModel(private val wordDao: WordDao) : ViewModel() {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val allWords: Flow<List<Word>> = kotlinx.coroutines.flow.combine(_currentLibraryId, _sortOption) { id, sort ->
-        Pair(id, sort)
+    val allWords: Flow<List<Word>> = combine(_currentLibraryId, _sortOption) { id, sort ->
+        id to sort
     }.flatMapLatest { (id, sort) ->
-        // We will fetch all and sort in memory or use different DAO queries.
-        // For simplicity and reorder capability, sorting in memory is easier for small lists,
-        // but DAO is better. Let's stick to memory sort for flexibility or add DAO queries.
-        // Given user wants reordering (custom sort), we might need a custom sort field.
-        // If sorting by standard fields, we use them.
-        // If sorting by custom order (Drag n Drop), we use sortOrder.
-        // For now, let's just get all words and sort in ViewModel or use one DAO query and sort here.
-        wordDao.getWordsByLibrary(id).kotlinx.coroutines.flow.map { list ->
+        wordDao.getWordsByLibrary(id).map { list ->
             when (sort) {
                 SortOption.CREATED_AT_DESC -> list.sortedByDescending { it.createdAt }
                 SortOption.CREATED_AT_ASC -> list.sortedBy { it.createdAt }
