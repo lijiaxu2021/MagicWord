@@ -12,8 +12,8 @@ android {
         applicationId = "com.magicword.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -21,8 +21,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            // Use debug key for now to simplify update process
+            // If debug.keystore is missing, it will fallback or fail, 
+            // but for GitHub Actions, we can rely on default debug key generation or provide one
+            storeFile = rootProject.file("app/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
+            // signingConfig = signingConfigs.getByName("release") // Disable for now to use default debug signing
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
