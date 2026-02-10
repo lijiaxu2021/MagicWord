@@ -36,6 +36,10 @@ import com.magicword.app.utils.LogUtil
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.launch
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.MutableState
 
 @Composable
 fun TestScreen() {
@@ -88,10 +92,6 @@ fun TestScreen() {
 }
 
 // Simple State Holder for Quiz
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-import androidx.compose.runtime.saveable.Saver
-
 @Parcelize
 data class QuizState(
     val currentIndex: Int = 0,
@@ -222,9 +222,111 @@ fun QuizChoiceMode(
     }
 }
 
+import androidx.compose.material3.OutlinedTextField
+
 @Composable
 fun QuizSpellMode(words: List<Word>, onBack: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("拼写模式开发中...")
+    if (words.size < 1) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("词库为空，无法开始拼写测试！")
+        }
+        return
+    }
+
+    var currentIndex by rememberSaveable { mutableStateOf(0) }
+    var score by rememberSaveable { mutableStateOf(0) }
+    var isFinished by rememberSaveable { mutableStateOf(false) }
+    var input by rememberSaveable { mutableStateOf("") }
+    
+    // We need to persist the shuffled order to avoid reset on recomposition/tab switch if we want robust behavior
+    // For now, using rememberSaveable for index/score is better than before.
+    // Ideally we should use a state object like QuizState for spelling too.
+    // To keep it simple and fix "placeholder" issue:
+    
+    val spellIndices = rememberSaveable {
+        mutableStateOf(words.indices.toList().shuffled())
+    }
+    
+    if (isFinished) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("拼写测试结束！", style = MaterialTheme.typography.headlineLarge)
+            Text("得分: $score / ${words.size}", style = MaterialTheme.typography.headlineMedium)
+            Button(
+                onClick = { 
+                    currentIndex = 0
+                    score = 0
+                    isFinished = false
+                    input = ""
+                    spellIndices.value = words.indices.toList().shuffled()
+                }, 
+                modifier = Modifier.padding(top = 32.dp)
+            ) {
+                Text("重新开始")
+            }
+        }
+    } else {
+        val currentWordIndex = spellIndices.value.getOrNull(currentIndex) ?: 0
+        val currentWord = words.getOrNull(currentWordIndex) ?: return
+
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.weight(1f))
+                Text("进度: ${currentIndex + 1}/${words.size}")
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "请拼写单词",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = currentWord.definitionCn,
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it },
+                label = { Text("输入单词") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    if (input.trim().equals(currentWord.word, ignoreCase = true)) {
+                        score++
+                    }
+                    input = ""
+                    if (currentIndex < words.size - 1) {
+                        currentIndex++
+                    } else {
+                        isFinished = true
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = input.isNotBlank()
+            ) {
+                Text("确定")
+            }
+            
+            // Hint for testing (optional, maybe remove in production)
+            // Text(text = "Hint: ${currentWord.word.first()}...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+        }
     }
 }
