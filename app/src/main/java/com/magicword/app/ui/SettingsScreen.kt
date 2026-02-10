@@ -128,13 +128,16 @@ fun LogListScreen(onBack: () -> Unit) {
     }
 }
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @Composable
 fun LogDetailDialog(content: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("日志详情") },
         text = {
-            Column(modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(content, style = MaterialTheme.typography.bodySmall)
             }
         },
