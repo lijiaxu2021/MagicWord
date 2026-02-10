@@ -116,6 +116,20 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         }
     }
 
+    fun deleteLibrary(libraryId: Int) {
+        viewModelScope.launch {
+            // Delete all words in library first
+            wordDao.deleteWordsByLibrary(libraryId)
+            // Then delete library
+            wordDao.deleteLibrary(libraryId)
+            
+            // If current library is deleted, switch to default (1) or first available
+            if (_currentLibraryId.value == libraryId) {
+                 switchLibrary(1)
+            }
+        }
+    }
+
     private val _importLogs = MutableStateFlow<List<String>>(emptyList())
     val importLogs: StateFlow<List<String>> = _importLogs.asStateFlow()
 

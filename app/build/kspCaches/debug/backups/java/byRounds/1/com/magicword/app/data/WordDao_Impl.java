@@ -54,6 +54,10 @@ public final class WordDao_Impl implements WordDao {
 
   private final SharedSQLiteStatement __preparedStmtOfClearTestSession;
 
+  private final SharedSQLiteStatement __preparedStmtOfDeleteLibrary;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteWordsByLibrary;
+
   public WordDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
     this.__insertionAdapterOfLibrary = new EntityInsertionAdapter<Library>(__db) {
@@ -239,6 +243,22 @@ public final class WordDao_Impl implements WordDao {
       @NonNull
       public String createQuery() {
         final String _query = "DELETE FROM test_session WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteLibrary = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM libraries WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteWordsByLibrary = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM words WHERE libraryId = ?";
         return _query;
       }
     };
@@ -455,6 +475,57 @@ public final class WordDao_Impl implements WordDao {
           }
         } finally {
           __preparedStmtOfClearTestSession.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteLibrary(final int libraryId, final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteLibrary.acquire();
+        int _argIndex = 1;
+        _stmt.bindLong(_argIndex, libraryId);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteLibrary.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteWordsByLibrary(final int libraryId,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteWordsByLibrary.acquire();
+        int _argIndex = 1;
+        _stmt.bindLong(_argIndex, libraryId);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteWordsByLibrary.release(_stmt);
         }
       }
     }, $completion);

@@ -453,6 +453,14 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(lib.name)
                         }
+                        
+                        // Delete Button (Don't allow deleting default library id=1)
+                        if (lib.id != 1) {
+                            IconButton(onClick = { viewModel.deleteLibrary(lib.id) }) {
+                                Icon(Icons.Default.Delete, "Delete Library", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                        
                         if (lib.id == currentLibraryId) {
                             Icon(Icons.Default.CheckCircle, "Selected", tint = MaterialTheme.colorScheme.primary)
                         }

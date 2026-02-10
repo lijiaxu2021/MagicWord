@@ -64,4 +64,10 @@ interface WordDao {
     
     @Query("DELETE FROM test_session WHERE id = :id")
     suspend fun clearTestSession(id: Int)
+
+    @Query("DELETE FROM libraries WHERE id = :libraryId")
+    suspend fun deleteLibrary(libraryId: Int)
+
+    @Query("DELETE FROM words WHERE libraryId = :libraryId")
+    suspend fun deleteWordsByLibrary(libraryId: Int)
 }
