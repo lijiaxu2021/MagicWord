@@ -42,6 +42,8 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.MutableState
 import androidx.compose.material3.OutlinedTextField
 
+import androidx.compose.runtime.LaunchedEffect
+
 @Composable
 fun TestScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -89,6 +91,13 @@ fun TestScreen() {
             1 -> QuizSpellMode(words = words, onBack = {})
             2 -> DictationPlaceholder()
         }
+    }
+}
+
+@Composable
+fun DictationPlaceholder() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("听写功能暂未实现")
     }
 }
 

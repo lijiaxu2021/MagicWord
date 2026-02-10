@@ -54,6 +54,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 
+import androidx.compose.foundation.clickable
+import com.magicword.app.utils.LogUtil
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen() {
