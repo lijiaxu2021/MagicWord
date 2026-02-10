@@ -43,9 +43,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 
-import com.magicword.app.ui.components.SlideInEntry
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val pagerState = rememberPagerState(pageCount = { 4 })
@@ -59,8 +66,8 @@ fun MainScreen() {
         Screen.Library
     )
 
-    // Current Screen State management for overlays (Settings, Logs)
-    var currentOverlay by remember { mutableStateOf<String?>(null) } // null, "settings", "logs"
+    // Current Screen State management for overlays (Settings, Logs, Profile)
+    var currentOverlay by remember { mutableStateOf<String?>(null) } // null, "settings", "logs", "profile"
 
     if (currentOverlay == "settings") {
         SettingsScreen(
@@ -69,8 +76,27 @@ fun MainScreen() {
         )
     } else if (currentOverlay == "logs") {
         LogListScreen(onBack = { currentOverlay = "settings" })
+    } else if (currentOverlay == "profile") {
+        ProfileScreen(onBack = { currentOverlay = null })
     } else {
         Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("MagicWord") },
+                    navigationIcon = {
+                        IconButton(onClick = { currentOverlay = "profile" }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Profile",
+                                modifier = Modifier.size(32.dp).clip(CircleShape)
+                            )
+                        }
+                    },
+                    actions = {
+                        // Keep Settings shortcut if needed, or rely on Profile for settings
+                    }
+                )
+            },
             bottomBar = {
                 NavigationBar {
                     items.forEachIndexed { index, screen ->
