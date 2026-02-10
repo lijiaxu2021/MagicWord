@@ -119,7 +119,7 @@ public final class WordDao_Impl implements WordDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR ABORT INTO `test_history` (`id`,`timestamp`,`totalQuestions`,`correctCount`,`testType`,`durationSeconds`) VALUES (nullif(?, 0),?,?,?,?,?)";
+        return "INSERT OR ABORT INTO `test_history` (`id`,`timestamp`,`totalQuestions`,`correctCount`,`testType`,`durationSeconds`,`questionsJson`) VALUES (nullif(?, 0),?,?,?,?,?,?)";
       }
 
       @Override
@@ -131,6 +131,7 @@ public final class WordDao_Impl implements WordDao {
         statement.bindLong(4, entity.getCorrectCount());
         statement.bindString(5, entity.getTestType());
         statement.bindLong(6, entity.getDurationSeconds());
+        statement.bindString(7, entity.getQuestionsJson());
       }
     };
     this.__insertionAdapterOfTestSession = new EntityInsertionAdapter<TestSession>(__db) {
@@ -868,6 +869,7 @@ public final class WordDao_Impl implements WordDao {
           final int _cursorIndexOfCorrectCount = CursorUtil.getColumnIndexOrThrow(_cursor, "correctCount");
           final int _cursorIndexOfTestType = CursorUtil.getColumnIndexOrThrow(_cursor, "testType");
           final int _cursorIndexOfDurationSeconds = CursorUtil.getColumnIndexOrThrow(_cursor, "durationSeconds");
+          final int _cursorIndexOfQuestionsJson = CursorUtil.getColumnIndexOrThrow(_cursor, "questionsJson");
           final List<TestHistory> _result = new ArrayList<TestHistory>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final TestHistory _item;
@@ -883,7 +885,9 @@ public final class WordDao_Impl implements WordDao {
             _tmpTestType = _cursor.getString(_cursorIndexOfTestType);
             final long _tmpDurationSeconds;
             _tmpDurationSeconds = _cursor.getLong(_cursorIndexOfDurationSeconds);
-            _item = new TestHistory(_tmpId,_tmpTimestamp,_tmpTotalQuestions,_tmpCorrectCount,_tmpTestType,_tmpDurationSeconds);
+            final String _tmpQuestionsJson;
+            _tmpQuestionsJson = _cursor.getString(_cursorIndexOfQuestionsJson);
+            _item = new TestHistory(_tmpId,_tmpTimestamp,_tmpTotalQuestions,_tmpCorrectCount,_tmpTestType,_tmpDurationSeconds,_tmpQuestionsJson);
             _result.add(_item);
           }
           return _result;

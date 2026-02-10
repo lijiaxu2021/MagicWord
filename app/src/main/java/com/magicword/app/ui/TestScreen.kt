@@ -25,9 +25,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.Composable
+import com.magicword.app.data.TestHistory
+import com.magicword.app.data.TestResultItem
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -200,7 +204,18 @@ fun TestScreen() {
                 words = words, 
                 state = choiceQuizState.value,
                 onStateChange = { choiceQuizState.value = it },
-                onBack = {}
+                onBack = {},
+                onFinish = { finalState, results ->
+                    val history = TestHistory(
+                        totalQuestions = words.size,
+                        correctCount = finalState.score,
+                        testType = "CHOICE",
+                        durationSeconds = 0,
+                        questionsJson = Gson().toJson(results)
+                    )
+                    viewModel.saveTestResult(history)
+                    viewModel.clearTestSession()
+                }
             )
             1 -> QuizSpellMode(words = words, onBack = {})
         }
@@ -260,7 +275,8 @@ fun QuizChoiceMode(
     words: List<Word>, 
     state: QuizState, 
     onStateChange: (QuizState) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onFinish: (QuizState, List<TestResultItem>) -> Unit
 ) {
     // ... (keep check for < 4 words) ...
     if (words.size < 4) {
@@ -281,8 +297,19 @@ fun QuizChoiceMode(
     }
 
     if (state.shuffledIndices.isEmpty()) return
+    
+    // Track results locally for this session
+    val results = remember { mutableListOf<TestResultItem>() }
 
     if (state.isFinished) {
+        // Trigger finish callback once when finished
+        LaunchedEffect(Unit) {
+             // Only save if we have results (simple check)
+             if (results.isNotEmpty()) {
+                 onFinish(state, results)
+             }
+        }
+
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -292,6 +319,7 @@ fun QuizChoiceMode(
             Text("得分: ${state.score} / ${words.size}", style = MaterialTheme.typography.headlineMedium)
             Button(
                 onClick = { 
+                    results.clear()
                     onStateChange(QuizState(shuffledIndices = words.indices.toList().shuffled()))
                 }, 
                 modifier = Modifier.padding(top = 32.dp)
@@ -365,16 +393,30 @@ fun QuizChoiceMode(
                             if (!isAnswered) {
                                 selectedOptionId = option.id
                                 isAnswered = true
-                                // Record result immediately? Or wait for next?
-                                // User wants "Immediate feedback then wait 3s"
-                                // We update score but delay moving to next index
+                                
+                                // Record Result
+                                results.add(TestResultItem(
+                                    wordId = currentWord.id,
+                                    word = currentWord.word,
+                                    isCorrect = (option.id == currentWord.id),
+                                    userAnswer = option.definitionCn
+                                ))
                             }
                         },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         colors = buttonColors,
                         enabled = !isAnswered // Disable clicks after answering
                     ) {
-                        Text(option.definitionCn, modifier = Modifier.padding(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(option.definitionCn, modifier = Modifier.weight(1f).padding(8.dp))
+                            if (isAnswered) {
+                                if (isCorrect) {
+                                    Icon(Icons.Filled.Check, "Correct", tint = Color.White)
+                                } else if (isSelected) {
+                                    Icon(Icons.Filled.Clear, "Wrong", tint = Color.White)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -383,11 +425,9 @@ fun QuizChoiceMode(
             LaunchedEffect(isAnswered) {
                 if (isAnswered) {
                     val isCorrect = selectedOptionId == currentWord.id
-                    delay(2000) // Wait 2s (3s might be too long, let's try 2s first, user said 3s, ok let's do 2.5s)
+                    delay(2000) 
                     
                     val newScore = if (isCorrect) state.score + 1 else state.score
-                    // Update Word stats (mock for now, should be in VM)
-                    // viewModel.updateWordStats(currentWord.id, isCorrect) 
                     
                     if (state.currentIndex < words.size - 1) {
                         onStateChange(state.copy(

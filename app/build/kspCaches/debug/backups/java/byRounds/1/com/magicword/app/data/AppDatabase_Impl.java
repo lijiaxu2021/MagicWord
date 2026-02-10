@@ -32,16 +32,16 @@ public final class AppDatabase_Impl extends AppDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(6) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(7) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `words` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `word` TEXT NOT NULL, `phonetic` TEXT, `definitionCn` TEXT NOT NULL, `definitionEn` TEXT, `example` TEXT, `memoryMethod` TEXT, `libraryId` INTEGER NOT NULL, `reviewCount` INTEGER NOT NULL, `lastReviewTime` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `correctCount` INTEGER NOT NULL, `incorrectCount` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_words_word_libraryId` ON `words` (`word`, `libraryId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `libraries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `lastIndex` INTEGER NOT NULL)");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `test_history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `totalQuestions` INTEGER NOT NULL, `correctCount` INTEGER NOT NULL, `testType` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `test_history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `totalQuestions` INTEGER NOT NULL, `correctCount` INTEGER NOT NULL, `testType` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL, `questionsJson` TEXT NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `test_session` (`id` INTEGER NOT NULL, `currentIndex` INTEGER NOT NULL, `score` INTEGER NOT NULL, `isFinished` INTEGER NOT NULL, `shuffledIndicesJson` TEXT NOT NULL, `testType` TEXT NOT NULL, `libraryId` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3411ac39b7e46c350e5128d5af996118')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '11ac548b8b8f3ec3b06ffbf267ef147a')");
       }
 
       @Override
@@ -133,13 +133,14 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoLibraries + "\n"
                   + " Found:\n" + _existingLibraries);
         }
-        final HashMap<String, TableInfo.Column> _columnsTestHistory = new HashMap<String, TableInfo.Column>(6);
+        final HashMap<String, TableInfo.Column> _columnsTestHistory = new HashMap<String, TableInfo.Column>(7);
         _columnsTestHistory.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTestHistory.put("timestamp", new TableInfo.Column("timestamp", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTestHistory.put("totalQuestions", new TableInfo.Column("totalQuestions", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTestHistory.put("correctCount", new TableInfo.Column("correctCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTestHistory.put("testType", new TableInfo.Column("testType", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTestHistory.put("durationSeconds", new TableInfo.Column("durationSeconds", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestHistory.put("questionsJson", new TableInfo.Column("questionsJson", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysTestHistory = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesTestHistory = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoTestHistory = new TableInfo("test_history", _columnsTestHistory, _foreignKeysTestHistory, _indicesTestHistory);
@@ -168,7 +169,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "3411ac39b7e46c350e5128d5af996118", "5581bde8da9d4c3e28c6bf18e70ccce9");
+    }, "11ac548b8b8f3ec3b06ffbf267ef147a", "2398d0f06813fb77a27e447ac5d273e8");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

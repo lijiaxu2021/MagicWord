@@ -33,6 +33,7 @@ import kotlinx.coroutines.withContext
 import android.content.SharedPreferences
 import com.magicword.app.data.TestHistory
 import com.magicword.app.data.TestSession
+import java.util.ArrayDeque
 
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
@@ -344,7 +345,11 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 val jsonEnd = content.lastIndexOf(']') + 1
                 val wordsList: List<String> = if (jsonStart != -1 && jsonEnd > jsonStart) {
                     val jsonStr = content.substring(jsonStart, jsonEnd)
-                    com.google.gson.Gson().fromJson(jsonStr, object : com.google.gson.reflect.TypeToken<List<String>>() {}.type)
+                    try {
+                        com.google.gson.Gson().fromJson(jsonStr, object : com.google.gson.reflect.TypeToken<List<String>>() {}.type)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
                 } else {
                     emptyList()
                 }
@@ -356,10 +361,18 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
 
                 _importLogs.value = _importLogs.value + "✅ 提取到 ${wordsList.size} 个单词: $wordsList"
 
-                // Step B: Process in chunks
+                // Step B: Process in chunks with Retry Queue
                 val chunkSize = 5
-                wordsList.chunked(chunkSize).forEachIndexed { index, chunk ->
-                    _importLogs.value = _importLogs.value + "Step B: 正在分析第 ${index + 1} 批单词..."
+                // Queue holds Pair<List<String>, Int> where Int is retryCount
+                val chunkQueue = ArrayDeque(wordsList.chunked(chunkSize).map { it to 0 })
+                val maxRetries = 3
+                
+                var processedCount = 0
+                val totalCount = chunkQueue.size // Initial chunks count, not counting retries as new items
+
+                while (chunkQueue.isNotEmpty()) {
+                    val (chunk, retryCount) = chunkQueue.pollFirst()!!
+                    _importLogs.value = _importLogs.value + "Step B: 正在分析批次 (剩余批次: ${chunkQueue.size})..."
                     
                     val chunkPrompt = """
                         You are a strict JSON data generator. Analyze these English words: $chunk
@@ -372,8 +385,9 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         3. "definition_cn": String (NOT List). Format: "pos. meaning".
                         4. "definition_en": String.
                         5. "example": String (NOT List). Format: "En sentence. Cn translation.\nEn sentence 2. Cn translation."
-                        6. "memory_method": String (NOT List).
+                        6. "memory_method": String (NOT List). Escape double quotes inside strings with backslash.
                         
+                        IMPORTANT: Ensure valid JSON syntax. No trailing commas.
                         NO MARKDOWN. NO COMMENTS. ONLY JSON.
                     """.trimIndent()
 
@@ -384,8 +398,8 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                     )
 
                     try {
-                        // Retry for chunk analysis
-                        val chunkResponse = retry(3) { RetrofitClient.api.chat(chunkRequest) }
+                        // Single attempt per queue pop
+                        val chunkResponse = RetrofitClient.api.chat(chunkRequest)
                         val chunkContent = chunkResponse.choices.first().message.content
                         
                         val chunkJsonStart = chunkContent.indexOf('[')
@@ -399,14 +413,20 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                                 wordDao.insertWord(wordToSave)
                                 _importLogs.value = _importLogs.value + "📥 已保存: ${detail.word}"
                             }
+                            processedCount++
                         } else {
-                            _importLogs.value = _importLogs.value + "⚠️ 解析失败: AI 返回格式错误"
+                            throw Exception("AI 返回格式错误 (找不到 JSON Array)")
                         }
                     } catch (e: Exception) {
-                        _importLogs.value = _importLogs.value + "❌ 本批次失败 (重试3次无效): ${e.message}"
+                        if (retryCount < maxRetries) {
+                            _importLogs.value = _importLogs.value + "⚠️ 本批次失败，已重新加入队列 (重试 ${retryCount + 1}/$maxRetries): ${e.message}"
+                            chunkQueue.addLast(chunk to (retryCount + 1))
+                        } else {
+                            _importLogs.value = _importLogs.value + "❌ 本批次彻底失败，放弃: $chunk"
+                        }
                     }
                 }
-                _importLogs.value = _importLogs.value + "🎉 所有任务完成！"
+                _importLogs.value = _importLogs.value + "🎉 所有任务处理完毕！"
                 
             } catch (e: Exception) {
                 _importLogs.value = _importLogs.value + "❌ 致命错误: ${e.message}"
