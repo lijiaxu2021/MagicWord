@@ -34,24 +34,25 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.launch
 import com.magicword.app.utils.LogUtil
 
-@OptIn(ExperimentalFoundationApi::class)
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Search
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination.Companion.hierarchy
+
 @Composable
 fun MainScreen() {
-    val pagerState = rememberPagerState(pageCount = { 2 })
-    val scope = rememberCoroutineScope()
-    var selectedItem by remember { mutableIntStateOf(0) }
+    val navController = rememberNavController()
     
-    // Sync pager state with selected item
-    LaunchedEffect(pagerState.currentPage) {
-        selectedItem = pagerState.currentPage
-        // Log tab switch
-        LogUtil.logFeature("TabSwitch", "Auto", "{ \"to\": \"${if (selectedItem == 0) "Words" else "Test"}\" }")
-    }
-
     // Navigation items
     val items = listOf(
-        NavItem("单词", Icons.Default.Book),
-        NavItem("测试", Icons.Default.CheckCircle)
+        Screen.Words,
+        Screen.Search,
+        Screen.Test,
+        Screen.Library
     )
 
     // Current Screen State management for overlays (Settings, Logs)
@@ -68,35 +69,54 @@ fun MainScreen() {
         Scaffold(
             bottomBar = {
                 NavigationBar {
-                    items.forEachIndexed { index, item ->
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentDestination = navBackStackEntry?.destination
+                    
+                    items.forEach { screen ->
                         NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
-                            selected = selectedItem == index,
+                            icon = { Icon(screen.icon, contentDescription = screen.label) },
+                            label = { Text(screen.label) },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
-                                selectedItem = index
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                LogUtil.logFeature("TabSwitch", "Manual", "{ \"to\": \"${item.label}\" }")
+                                LogUtil.logFeature("TabSwitch", "Manual", "{ \"to\": \"${screen.label}\" }")
                             }
                         )
                     }
                 }
             }
         ) { innerPadding ->
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.padding(innerPadding).fillMaxSize(),
-                userScrollEnabled = true // Allow swiping between tabs
-            ) { page ->
-                when (page) {
-                    0 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
-                    1 -> TestScreen()
+            NavHost(
+                navController = navController, 
+                startDestination = Screen.Words.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.Words.route) { 
+                    WordsScreen(onOpenSettings = { currentOverlay = "settings" }) 
+                }
+                composable(Screen.Search.route) { 
+                    SearchScreen() 
+                }
+                composable(Screen.Test.route) { 
+                    TestScreen() 
+                }
+                composable(Screen.Library.route) { 
+                    LibraryScreen() 
                 }
             }
         }
     }
 }
 
-data class NavItem(val label: String, val icon: ImageVector)
+sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
+    object Words : Screen("words", "单词", Icons.Default.Book)
+    object Search : Screen("search", "搜词", Icons.Default.Search)
+    object Test : Screen("test", "测试", Icons.Default.CheckCircle)
+    object Library : Screen("library", "词库", Icons.Default.List)
+}
