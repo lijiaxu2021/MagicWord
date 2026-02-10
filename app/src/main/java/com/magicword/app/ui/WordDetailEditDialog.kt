@@ -8,8 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.text.font.FontWeight
 import com.magicword.app.data.Word
-
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

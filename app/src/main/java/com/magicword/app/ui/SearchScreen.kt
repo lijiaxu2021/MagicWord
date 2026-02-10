@@ -38,6 +38,10 @@ import com.magicword.app.data.Word
 import androidx.compose.runtime.LaunchedEffect
 import com.magicword.app.utils.LogUtil
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButton
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen() {
