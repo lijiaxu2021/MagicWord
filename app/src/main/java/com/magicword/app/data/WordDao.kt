@@ -51,4 +51,14 @@ interface WordDao {
     
     @Query("UPDATE words SET reviewCount = reviewCount + 1, correctCount = correctCount + :correct WHERE id = :id")
     suspend fun updateWordStats(id: Int, correct: Int)
+
+    // Test Session
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveTestSession(session: TestSession)
+
+    @Query("SELECT * FROM test_session WHERE id = :id")
+    suspend fun getTestSession(id: Int): TestSession?
+    
+    @Query("DELETE FROM test_session WHERE id = :id")
+    suspend fun clearTestSession(id: Int)
 }

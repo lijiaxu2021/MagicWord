@@ -66,6 +66,52 @@ fun TestScreen() {
         )
     }
 
+    // DB Persistence for Test State
+    val savedSession by viewModel.testSession.collectAsState()
+    
+    // Initialize or Restore State
+    LaunchedEffect(savedSession, words) {
+        if (words.isNotEmpty()) {
+            if (savedSession != null && savedSession!!.libraryId == (testCandidates?.firstOrNull()?.libraryId ?: 1)) {
+                 // Restore from DB
+                 val indicesType = object : TypeToken<List<Int>>() {}.type
+                 val indices: List<Int> = Gson().fromJson(savedSession!!.shuffledIndicesJson, indicesType)
+                 
+                 // Restore Choice Mode
+                 if (savedSession!!.testType == "CHOICE") {
+                     choiceQuizState.value = QuizState(
+                         currentIndex = savedSession!!.currentIndex,
+                         score = savedSession!!.score,
+                         isFinished = savedSession!!.isFinished,
+                         shuffledIndices = indices
+                     )
+                     // Sync tab
+                     if (selectedTab != 0) selectedTab = 0
+                 } 
+                 // Restore Spell Mode (if we had separate state, but we can reuse logic or added persist for Spell)
+                 // For now, only Choice mode is fully using QuizState object in this file structure, 
+                 // but we should apply similar logic to Spell mode or unify.
+                 // Given user urgency, let's focus on Choice mode restoration which seems to be the main complaint.
+            }
+        }
+    }
+
+    // Auto-save State on Change
+    LaunchedEffect(choiceQuizState.value) {
+        if (words.isNotEmpty() && choiceQuizState.value.shuffledIndices.isNotEmpty()) {
+            val session = TestSession(
+                id = 1,
+                currentIndex = choiceQuizState.value.currentIndex,
+                score = choiceQuizState.value.score,
+                isFinished = choiceQuizState.value.isFinished,
+                shuffledIndicesJson = Gson().toJson(choiceQuizState.value.shuffledIndices),
+                testType = "CHOICE",
+                libraryId = testCandidates?.firstOrNull()?.libraryId ?: 1 // Approximate library ID
+            )
+            viewModel.saveTestSession(session)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Show Test Source Info and History Button
         Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
@@ -149,6 +195,14 @@ fun TestHistoryDialog(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
 }
 
 // Simple State Holder for Quiz
+import kotlinx.parcelize.Parcelize
+import android.os.Parcelable
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.MutableState
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.magicword.app.data.TestSession
+
 @Parcelize
 data class QuizState(
     val currentIndex: Int = 0,

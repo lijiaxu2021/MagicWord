@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Word::class, Library::class, TestHistory::class], version = 5, exportSchema = false)
+@Database(entities = [Word::class, Library::class, TestHistory::class, TestSession::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun wordDao(): WordDao
 
@@ -42,6 +42,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `test_session` (
+                        `id` INTEGER NOT NULL PRIMARY KEY,
+                        `currentIndex` INTEGER NOT NULL,
+                        `score` INTEGER NOT NULL,
+                        `isFinished` INTEGER NOT NULL,
+                        `shuffledIndicesJson` TEXT NOT NULL,
+                        `testType` TEXT NOT NULL,
+                        `libraryId` INTEGER NOT NULL
+                    )
+                """)
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -56,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
                         db.execSQL("INSERT INTO libraries (id, name, description, createdAt, lastIndex) VALUES (1, '默认词库', 'Default Library', ${System.currentTimeMillis()}, 0)")
                     }
                 })
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

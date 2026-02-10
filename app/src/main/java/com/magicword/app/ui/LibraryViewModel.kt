@@ -32,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.content.SharedPreferences
 import com.magicword.app.data.TestHistory
+import com.magicword.app.data.TestSession
 
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
@@ -138,6 +139,31 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         _testCandidates.value = words
     }
     
+    // Test Session State
+    private val _testSession = MutableStateFlow<TestSession?>(null)
+    val testSession: StateFlow<TestSession?> = _testSession.asStateFlow()
+
+    // Restore session on init
+    init {
+        viewModelScope.launch {
+            _testSession.value = wordDao.getTestSession(1) // Assuming single session ID 1 for now
+        }
+    }
+    
+    fun saveTestSession(session: TestSession) {
+        viewModelScope.launch {
+            wordDao.saveTestSession(session)
+            _testSession.value = session
+        }
+    }
+    
+    fun clearTestSession() {
+        viewModelScope.launch {
+            wordDao.clearTestSession(1)
+            _testSession.value = null
+        }
+    }
+
     // Test History
     val testHistory: Flow<List<TestHistory>> = wordDao.getAllTestHistory()
     
