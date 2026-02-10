@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
     private const val BASE_URL = "https://api.siliconflow.cn/v1/"
     // Note: In production, API Key should be secured
-    private const val API_KEY = "sk-zgydqlcsmmwulbgqgmnkhiubkrdmndkikgredipjaleqcyia" 
+    private const val API_KEY = "sk-zgydqlcsmmwulbgqgmnkhiubkrdmndkikgredipjaleqcyia"
 
     private val client = OkHttpClient.Builder()
         .addInterceptor { chain ->

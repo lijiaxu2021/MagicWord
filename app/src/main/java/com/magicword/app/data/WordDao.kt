@@ -18,6 +18,9 @@ interface WordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWord(word: Word): Long
 
+    @androidx.room.Delete
+    suspend fun deleteWord(word: Word)
+
     @Update
     suspend fun updateWord(word: Word)
 }

@@ -30,9 +30,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import androidx.compose.ui.platform.LocalContext
+import com.magicword.app.data.AppDatabase
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
+fun SearchScreen() {
+    val context = LocalContext.current
+    val database = AppDatabase.getDatabase(context)
+    val viewModel: SearchViewModel = viewModel(
+        factory = SearchViewModelFactory(database.wordDao())
+    )
     var query by remember { mutableStateOf("") }
     val result by viewModel.searchResult.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -94,6 +102,13 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
                         text = result,
                         style = MaterialTheme.typography.bodyLarge
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.saveWord(query, result) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("保存到词库")
+                    }
                 }
             }
         }

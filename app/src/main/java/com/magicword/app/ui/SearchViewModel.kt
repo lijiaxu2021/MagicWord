@@ -1,6 +1,7 @@
 package com.magicword.app.ui
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.magicword.app.network.AiRequest
 import com.magicword.app.network.Message
@@ -10,7 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class SearchViewModel : ViewModel() {
+import com.magicword.app.data.WordDao
+
+class SearchViewModel(private val wordDao: WordDao) : ViewModel() {
     private val _searchResult = MutableStateFlow("")
     val searchResult: StateFlow<String> = _searchResult.asStateFlow()
 
@@ -37,5 +40,30 @@ class SearchViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun saveWord(word: String, definition: String) {
+        viewModelScope.launch {
+            val newWord = com.magicword.app.data.Word(
+                word = word,
+                phonetic = null,
+                definitionCn = definition.take(100), // Simplified storage for now
+                definitionEn = null,
+                example = null,
+                memoryMethod = null,
+                libraryId = 1
+            )
+            wordDao.insertWord(newWord)
+        }
+    }
+}
+
+class SearchViewModelFactory(private val wordDao: WordDao) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return SearchViewModel(wordDao) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
