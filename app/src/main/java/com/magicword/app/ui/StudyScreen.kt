@@ -1,4 +1,4 @@
-package com.easyword.app.ui
+package com.magicword.app.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,8 +8,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun SearchScreen() {
+fun StudyScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "AI 查词 (Coming Soon)")
+        Text(text = "学习模式 (Coming Soon)")
     }
 }

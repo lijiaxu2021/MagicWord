@@ -1,4 +1,4 @@
-package com.easyword.app.data
+package com.magicword.app.data
 
 import android.content.Context
 import androidx.room.Database

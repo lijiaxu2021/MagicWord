@@ -1,4 +1,4 @@
-package com.easyword.app.network
+package com.magicword.app.network
 
 import retrofit2.http.Body
 import retrofit2.http.Headers

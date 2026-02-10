@@ -1,4 +1,4 @@
-package com.easyword.app.data
+package com.magicword.app.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

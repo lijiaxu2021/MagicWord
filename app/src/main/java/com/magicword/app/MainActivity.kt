@@ -1,4 +1,4 @@
-package com.easyword.app
+package com.magicword.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.easyword.app.ui.MainScreen
-import com.easyword.app.ui.theme.EasyWordTheme
+import com.magicword.app.ui.MainScreen
+import com.magicword.app.ui.theme.EasyWordTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

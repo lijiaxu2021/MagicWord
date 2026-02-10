@@ -1,4 +1,4 @@
-package com.easyword.app.ui
+package com.magicword.app.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon

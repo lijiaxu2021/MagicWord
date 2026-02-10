@@ -1,4 +1,4 @@
-package com.easyword.app.network
+package com.magicword.app.network
 
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

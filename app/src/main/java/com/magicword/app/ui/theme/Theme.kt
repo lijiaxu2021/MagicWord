@@ -1,4 +1,4 @@
-package com.easyword.app.ui.theme
+package com.magicword.app.ui.theme
 
 import android.app.Activity
 import android.os.Build
