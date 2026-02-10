@@ -60,7 +60,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
                     )
                 }
             )
-            HorizontalDivider()
+            Divider()
             
             // View Logs
             ListItem(
@@ -68,7 +68,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
                 modifier = Modifier.clickable { onNavigateToLogs() },
                 trailingContent = { Text("查看 >") }
             )
-            HorizontalDivider()
+            Divider()
 
             // About
             ListItem(
@@ -76,7 +76,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
                 modifier = Modifier.clickable { showAboutDialog = true },
                 trailingContent = { Text("查看 >") }
             )
-            HorizontalDivider()
+            Divider()
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -174,7 +174,7 @@ fun LogListScreen(onBack: () -> Unit) {
                             showLogDetail = true
                         }
                     )
-                    HorizontalDivider()
+                    Divider()
                 }
             }
         }
