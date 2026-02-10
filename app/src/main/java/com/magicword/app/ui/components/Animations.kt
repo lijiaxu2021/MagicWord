@@ -30,9 +30,9 @@ fun SlideInEntry(
         visible = visible,
         enter = slideInHorizontally(
             initialOffsetX = { -it / 3 }, // Start from slightly left
-            animationSpec = tween(durationMillis = 400)
+            animationSpec = tween(durationMillis = 600) // Slower animation
         ) + fadeIn(
-            animationSpec = tween(durationMillis = 400)
+            animationSpec = tween(durationMillis = 600) // Slower animation
         ),
         modifier = modifier
     ) {
