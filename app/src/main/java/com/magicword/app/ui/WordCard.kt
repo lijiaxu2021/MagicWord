@@ -33,10 +33,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+
 @Composable
 fun WordCard(
     word: Word,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onEditClick: () -> Unit
 ) {
     var isFlipped by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
@@ -93,6 +99,14 @@ fun WordCard(
                     }
             ) {
                 WordDetailContent(word = word)
+                
+                // Edit Button on the back
+                IconButton(
+                    onClick = onEditClick,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                }
             }
         }
     }

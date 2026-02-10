@@ -111,33 +111,15 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                     modifier = Modifier.fillMaxSize().padding(padding)
                 ) { page ->
                     val word = words[page]
-                    // Requirement: Only Word and Phonetic, click/interaction might show more?
-                    // Actually, prompt says "Full screen display current library word card (every card only display word and phonetic, left right swipe to switch)"
-                    // But Req 2 implies we can see full details.
-                    // Let's make the card clickable to show full details in a modal or expand it?
-                    // OR stick to the simple requirement for the main view.
                     
                     Box(
-                        modifier = Modifier.fillMaxSize().clickable { editingWord = word }, // Click to show details/edit
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = word.word,
-                                style = MaterialTheme.typography.displayLarge,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            if (!word.phonetic.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = word.phonetic,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
+                        WordCard(
+                            word = word,
+                            onEditClick = { editingWord = word }
+                        )
                     }
                 }
             }
