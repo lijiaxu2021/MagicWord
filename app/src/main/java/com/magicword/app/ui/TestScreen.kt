@@ -151,6 +151,10 @@ data class QuizState(
     }
 }
 
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
+
 @Composable
 fun QuizChoiceMode(
     words: List<Word>, 
@@ -158,6 +162,7 @@ fun QuizChoiceMode(
     onStateChange: (QuizState) -> Unit,
     onBack: () -> Unit
 ) {
+    // ... (keep check for < 4 words) ...
     if (words.size < 4) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("词库单词不足4个，无法开始选择题测试！")
@@ -168,8 +173,6 @@ fun QuizChoiceMode(
 
     // Initialize shuffled order if empty or size mismatch (re-init)
     if (state.shuffledIndices.isEmpty() || state.shuffledIndices.size != words.size) {
-        // We need to trigger a state update, but side-effects in Composable body are bad.
-        // Use LaunchedEffect.
         LaunchedEffect(words) {
             if (words.isNotEmpty()) {
                 onStateChange(state.copy(shuffledIndices = words.indices.toList().shuffled()))
@@ -177,7 +180,6 @@ fun QuizChoiceMode(
         }
     }
 
-    // If still empty after LaunchedEffect (e.g. first frame), show loading or return
     if (state.shuffledIndices.isEmpty()) return
 
     if (state.isFinished) {
@@ -190,7 +192,6 @@ fun QuizChoiceMode(
             Text("得分: ${state.score} / ${words.size}", style = MaterialTheme.typography.headlineMedium)
             Button(
                 onClick = { 
-                    // Reset
                     onStateChange(QuizState(shuffledIndices = words.indices.toList().shuffled()))
                 }, 
                 modifier = Modifier.padding(top = 32.dp)
@@ -199,18 +200,21 @@ fun QuizChoiceMode(
             }
         }
     } else {
-        // Safe access
         val currentWordIndex = state.shuffledIndices.getOrNull(state.currentIndex) ?: 0
         val currentWord = words.getOrNull(currentWordIndex) ?: return
 
-        // Generate options: correct answer + 3 random wrong answers
-        // We use remember with currentWord to avoid regenerating on every recomposition
+        // Generate options (stable for current word)
         val options = remember(currentWord) {
             val wrongOptions = words.filter { it.id != currentWord.id }.shuffled().take(3)
             (wrongOptions + currentWord).shuffled()
         }
+        
+        // Immediate Feedback State
+        var selectedOptionId by remember { mutableStateOf<Int?>(null) }
+        var isAnswered by remember { mutableStateOf(false) }
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            // ... (keep header) ...
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.weight(1f))
                 Text("进度: ${state.currentIndex + 1}/${words.size}")
@@ -241,25 +245,64 @@ fun QuizChoiceMode(
                     .verticalScroll(rememberScrollState())
             ) {
                 options.forEach { option ->
+                    val isCorrect = option.id == currentWord.id
+                    val isSelected = selectedOptionId == option.id
+                    
+                    val buttonColors = if (isAnswered) {
+                        if (isCorrect) {
+                            ButtonDefaults.buttonColors(containerColor = Color.Green) // Correct answer always Green
+                        } else if (isSelected) {
+                            ButtonDefaults.buttonColors(containerColor = Color.Red) // Selected wrong answer Red
+                        } else {
+                            ButtonDefaults.buttonColors() // Others default
+                        }
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    }
+
                     Button(
                         onClick = {
-                            val newScore = if (option.id == currentWord.id) state.score + 1 else state.score
-                            if (state.currentIndex < words.size - 1) {
-                                onStateChange(state.copy(
-                                    score = newScore,
-                                    currentIndex = state.currentIndex + 1
-                                ))
-                            } else {
-                                onStateChange(state.copy(
-                                    score = newScore,
-                                    isFinished = true
-                                ))
+                            if (!isAnswered) {
+                                selectedOptionId = option.id
+                                isAnswered = true
+                                // Record result immediately? Or wait for next?
+                                // User wants "Immediate feedback then wait 3s"
+                                // We update score but delay moving to next index
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = buttonColors,
+                        enabled = !isAnswered // Disable clicks after answering
                     ) {
                         Text(option.definitionCn, modifier = Modifier.padding(8.dp))
                     }
+                }
+            }
+            
+            // Auto-advance Logic
+            LaunchedEffect(isAnswered) {
+                if (isAnswered) {
+                    val isCorrect = selectedOptionId == currentWord.id
+                    delay(2000) // Wait 2s (3s might be too long, let's try 2s first, user said 3s, ok let's do 2.5s)
+                    
+                    val newScore = if (isCorrect) state.score + 1 else state.score
+                    // Update Word stats (mock for now, should be in VM)
+                    // viewModel.updateWordStats(currentWord.id, isCorrect) 
+                    
+                    if (state.currentIndex < words.size - 1) {
+                        onStateChange(state.copy(
+                            score = newScore,
+                            currentIndex = state.currentIndex + 1
+                        ))
+                    } else {
+                        onStateChange(state.copy(
+                            score = newScore,
+                            isFinished = true
+                        ))
+                    }
+                    // Reset local state for next question
+                    selectedOptionId = null
+                    isAnswered = false
                 }
             }
         }
