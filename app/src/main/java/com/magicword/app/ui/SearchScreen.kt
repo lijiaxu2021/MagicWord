@@ -35,6 +35,9 @@ import com.magicword.app.data.AppDatabase
 
 import com.magicword.app.data.Word
 
+import androidx.compose.runtime.LaunchedEffect
+import com.magicword.app.utils.LogUtil
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen() {
@@ -47,6 +50,14 @@ fun SearchScreen() {
     val result by viewModel.searchResult.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Auto-save when result is ready
+    LaunchedEffect(result) {
+        result?.let { word ->
+            viewModel.saveWord(word, libraryId = 1)
+            LogUtil.logFeature("AutoSave", "Success", "{ \"word\": \"${word.word}\" }")
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,44 +69,36 @@ fun SearchScreen() {
             label = { Text("输入单词") },
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "搜索")
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    IconButton(onClick = { viewModel.searchWord(query) }) {
+                        Icon(Icons.Default.Search, contentDescription = "搜索")
+                    }
+                }
             },
-            singleLine = true
+            singleLine = true,
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                onDone = { viewModel.searchWord(query) }
+            )
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { viewModel.searchWord(query) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(end = 8.dp).height(20.dp).fillMaxWidth(0.1f)
-                )
-                Text("正在思考...")
-            } else {
-                Text("AI 查词")
-            }
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         result?.let { word ->
-            Box(modifier = Modifier.weight(1f)) {
-                WordCard(word = word)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { 
-                    // TODO: Get actual currentLibraryId from shared state
-                    viewModel.saveWord(word, libraryId = 1) 
-                },
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                text = "查询结果 (已自动保存)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            // Show Card without flip animation for search result, just the content
+            Card(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Text("保存到词库")
+                WordDetailContent(word = word)
             }
         }
     }

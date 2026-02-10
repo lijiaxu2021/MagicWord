@@ -15,5 +15,8 @@ data class Word(
     @SerializedName("memory_method") val memoryMethod: String?,
     val libraryId: Int,
     val reviewCount: Int = 0,
-    val lastReviewTime: Long = 0
+    val lastReviewTime: Long = 0,
+    val createdAt: Long = System.currentTimeMillis(),
+    val correctCount: Int = 0,
+    val incorrectCount: Int = 0
 )

@@ -10,6 +10,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.magicword.app.data.Word
 
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WordDetailEditDialog(
@@ -23,6 +27,8 @@ fun WordDetailEditDialog(
     var definitionCn by remember { mutableStateOf(word.definitionCn) }
     var example by remember { mutableStateOf(word.example ?: "") }
     var memoryMethod by remember { mutableStateOf(word.memoryMethod ?: "") }
+
+    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -71,6 +77,23 @@ fun WordDetailEditDialog(
                         minLines = 3
                     )
                 } else {
+                    // Statistics Section
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("📊 学习统计", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("录入时间: ${dateFormat.format(Date(word.createdAt))}", style = MaterialTheme.typography.bodySmall)
+                            Text("上次复习: ${if (word.lastReviewTime > 0) dateFormat.format(Date(word.lastReviewTime)) else "从未"}", style = MaterialTheme.typography.bodySmall)
+                            Text("复习次数: ${word.reviewCount}", style = MaterialTheme.typography.bodySmall)
+                            val total = word.correctCount + word.incorrectCount
+                            val accuracy = if (total > 0) (word.correctCount.toFloat() / total * 100).toInt() else 0
+                            Text("正确率: $accuracy% (对${word.correctCount}/错${word.incorrectCount})", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+
                     Text("中文释义", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text(word.definitionCn, style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.height(16.dp))
