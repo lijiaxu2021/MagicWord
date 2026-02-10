@@ -26,16 +26,8 @@ import com.magicword.app.data.AppDatabase
 import com.magicword.app.data.Word
 import com.magicword.app.utils.LogUtil
 import kotlinx.coroutines.launch
-
-// Import for Drag and Drop
-import androidx.compose.foundation.draganddrop.dragAndDropSource
-import androidx.compose.foundation.draganddrop.dragAndDropTarget
-import androidx.compose.ui.draganddrop.DragAndDropEvent
-import androidx.compose.ui.draganddrop.DragAndDropTarget
-import androidx.compose.ui.draganddrop.DragAndDropTransferData
-import androidx.compose.ui.draganddrop.mimeTypes
-import android.content.ClipData
-import android.content.ClipDescription
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -309,6 +301,9 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         }
     }
 
+    // Add Library Dialog State
+    var showAddLibraryDialog by remember { mutableStateOf(false) }
+
     // Library Switcher Bottom Sheet
     if (showLibrarySheet) {
         ModalBottomSheet(onDismissRequest = { showLibrarySheet = false }) {
@@ -326,12 +321,27 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                     )
                 }
                 item {
-                    Button(onClick = { viewModel.addLibrary("新词库 ${libraries.size + 1}") }, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { 
+                        // Instead of auto-adding, show dialog
+                        showAddLibraryDialog = true
+                        showLibrarySheet = false
+                    }, modifier = Modifier.fillMaxWidth()) {
                         Text("新建词库")
                     }
                 }
             }
         }
+    }
+    
+    // Add Library Dialog
+    if (showAddLibraryDialog) {
+        AddLibraryDialog(
+            onDismiss = { showAddLibraryDialog = false },
+            onConfirm = { name ->
+                viewModel.addLibrary(name)
+                showAddLibraryDialog = false
+            }
+        )
     }
 
     // Edit Dialog
@@ -363,5 +373,89 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 }
             )
         }
+    }
+}
+
+@Composable
+fun AddLibraryDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建词库") },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("词库名称") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { if (name.isNotBlank()) onConfirm(name) }) {
+                Text("创建")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun BulkImportContent(viewModel: LibraryViewModel, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf("") }
+    val logs by viewModel.importLogs.collectAsState()
+    val isImporting by viewModel.isImporting.collectAsState()
+
+    Column(modifier = Modifier
+        .padding(16.dp)
+        .fillMaxWidth()
+        .imePadding()
+        .navigationBarsPadding()
+    ) {
+        // Move input to top
+        Text("AI 批量导入", style = MaterialTheme.typography.titleLarge)
+        Text("输入单词列表（用逗号或换行分隔）", style = MaterialTheme.typography.bodySmall)
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            modifier = Modifier.fillMaxWidth().height(150.dp),
+            placeholder = { Text("apple, banana\nor sentences...") }
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        if (logs.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                LazyColumn(contentPadding = PaddingValues(8.dp)) {
+                    items(logs) { log ->
+                        Text(log, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onDismiss, modifier = Modifier.padding(end = 8.dp)) {
+                Text("关闭")
+            }
+            Button(
+                onClick = { viewModel.bulkImport(text) },
+                enabled = !isImporting && text.isNotBlank()
+            ) {
+                Text(if (isImporting) "导入中..." else "开始导入")
+            }
+        }
+        
+        // Push content up when keyboard opens
+        Spacer(modifier = Modifier.weight(1f)) 
     }
 }
