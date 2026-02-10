@@ -16,6 +16,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.lang.SuppressWarnings;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,17 +32,24 @@ public final class AppDatabase_Impl extends AppDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(1) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(6) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `words` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `word` TEXT NOT NULL, `phonetic` TEXT, `definitionCn` TEXT NOT NULL, `definitionEn` TEXT, `example` TEXT, `memoryMethod` TEXT, `libraryId` INTEGER NOT NULL, `reviewCount` INTEGER NOT NULL, `lastReviewTime` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `words` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `word` TEXT NOT NULL, `phonetic` TEXT, `definitionCn` TEXT NOT NULL, `definitionEn` TEXT, `example` TEXT, `memoryMethod` TEXT, `libraryId` INTEGER NOT NULL, `reviewCount` INTEGER NOT NULL, `lastReviewTime` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `correctCount` INTEGER NOT NULL, `incorrectCount` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL)");
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_words_word_libraryId` ON `words` (`word`, `libraryId`)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `libraries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `lastIndex` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `test_history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `totalQuestions` INTEGER NOT NULL, `correctCount` INTEGER NOT NULL, `testType` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `test_session` (`id` INTEGER NOT NULL, `currentIndex` INTEGER NOT NULL, `score` INTEGER NOT NULL, `isFinished` INTEGER NOT NULL, `shuffledIndicesJson` TEXT NOT NULL, `testType` TEXT NOT NULL, `libraryId` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '019f3b7706478052ca9e1dd861811a20')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3411ac39b7e46c350e5128d5af996118')");
       }
 
       @Override
       public void dropAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("DROP TABLE IF EXISTS `words`");
+        db.execSQL("DROP TABLE IF EXISTS `libraries`");
+        db.execSQL("DROP TABLE IF EXISTS `test_history`");
+        db.execSQL("DROP TABLE IF EXISTS `test_session`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -85,7 +93,7 @@ public final class AppDatabase_Impl extends AppDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsWords = new HashMap<String, TableInfo.Column>(10);
+        final HashMap<String, TableInfo.Column> _columnsWords = new HashMap<String, TableInfo.Column>(14);
         _columnsWords.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsWords.put("word", new TableInfo.Column("word", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsWords.put("phonetic", new TableInfo.Column("phonetic", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -96,8 +104,13 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsWords.put("libraryId", new TableInfo.Column("libraryId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsWords.put("reviewCount", new TableInfo.Column("reviewCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsWords.put("lastReviewTime", new TableInfo.Column("lastReviewTime", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsWords.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsWords.put("correctCount", new TableInfo.Column("correctCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsWords.put("incorrectCount", new TableInfo.Column("incorrectCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsWords.put("sortOrder", new TableInfo.Column("sortOrder", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysWords = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesWords = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesWords = new HashSet<TableInfo.Index>(1);
+        _indicesWords.add(new TableInfo.Index("index_words_word_libraryId", true, Arrays.asList("word", "libraryId"), Arrays.asList("ASC", "ASC")));
         final TableInfo _infoWords = new TableInfo("words", _columnsWords, _foreignKeysWords, _indicesWords);
         final TableInfo _existingWords = TableInfo.read(db, "words");
         if (!_infoWords.equals(_existingWords)) {
@@ -105,9 +118,57 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoWords + "\n"
                   + " Found:\n" + _existingWords);
         }
+        final HashMap<String, TableInfo.Column> _columnsLibraries = new HashMap<String, TableInfo.Column>(5);
+        _columnsLibraries.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsLibraries.put("name", new TableInfo.Column("name", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsLibraries.put("description", new TableInfo.Column("description", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsLibraries.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsLibraries.put("lastIndex", new TableInfo.Column("lastIndex", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysLibraries = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesLibraries = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoLibraries = new TableInfo("libraries", _columnsLibraries, _foreignKeysLibraries, _indicesLibraries);
+        final TableInfo _existingLibraries = TableInfo.read(db, "libraries");
+        if (!_infoLibraries.equals(_existingLibraries)) {
+          return new RoomOpenHelper.ValidationResult(false, "libraries(com.magicword.app.data.Library).\n"
+                  + " Expected:\n" + _infoLibraries + "\n"
+                  + " Found:\n" + _existingLibraries);
+        }
+        final HashMap<String, TableInfo.Column> _columnsTestHistory = new HashMap<String, TableInfo.Column>(6);
+        _columnsTestHistory.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestHistory.put("timestamp", new TableInfo.Column("timestamp", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestHistory.put("totalQuestions", new TableInfo.Column("totalQuestions", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestHistory.put("correctCount", new TableInfo.Column("correctCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestHistory.put("testType", new TableInfo.Column("testType", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestHistory.put("durationSeconds", new TableInfo.Column("durationSeconds", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysTestHistory = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesTestHistory = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoTestHistory = new TableInfo("test_history", _columnsTestHistory, _foreignKeysTestHistory, _indicesTestHistory);
+        final TableInfo _existingTestHistory = TableInfo.read(db, "test_history");
+        if (!_infoTestHistory.equals(_existingTestHistory)) {
+          return new RoomOpenHelper.ValidationResult(false, "test_history(com.magicword.app.data.TestHistory).\n"
+                  + " Expected:\n" + _infoTestHistory + "\n"
+                  + " Found:\n" + _existingTestHistory);
+        }
+        final HashMap<String, TableInfo.Column> _columnsTestSession = new HashMap<String, TableInfo.Column>(7);
+        _columnsTestSession.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestSession.put("currentIndex", new TableInfo.Column("currentIndex", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestSession.put("score", new TableInfo.Column("score", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestSession.put("isFinished", new TableInfo.Column("isFinished", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestSession.put("shuffledIndicesJson", new TableInfo.Column("shuffledIndicesJson", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestSession.put("testType", new TableInfo.Column("testType", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTestSession.put("libraryId", new TableInfo.Column("libraryId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysTestSession = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesTestSession = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoTestSession = new TableInfo("test_session", _columnsTestSession, _foreignKeysTestSession, _indicesTestSession);
+        final TableInfo _existingTestSession = TableInfo.read(db, "test_session");
+        if (!_infoTestSession.equals(_existingTestSession)) {
+          return new RoomOpenHelper.ValidationResult(false, "test_session(com.magicword.app.data.TestSession).\n"
+                  + " Expected:\n" + _infoTestSession + "\n"
+                  + " Found:\n" + _existingTestSession);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "019f3b7706478052ca9e1dd861811a20", "697024f6fe3f74fc453553acadb49648");
+    }, "3411ac39b7e46c350e5128d5af996118", "5581bde8da9d4c3e28c6bf18e70ccce9");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -118,7 +179,7 @@ public final class AppDatabase_Impl extends AppDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "words");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "words","libraries","test_history","test_session");
   }
 
   @Override
@@ -128,6 +189,9 @@ public final class AppDatabase_Impl extends AppDatabase {
     try {
       super.beginTransaction();
       _db.execSQL("DELETE FROM `words`");
+      _db.execSQL("DELETE FROM `libraries`");
+      _db.execSQL("DELETE FROM `test_history`");
+      _db.execSQL("DELETE FROM `test_session`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();

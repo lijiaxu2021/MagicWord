@@ -54,13 +54,14 @@
     <string msgid="7933458017204019916" name="indeterminate">"Daļēji atzīmēta"</string>
     <string msgid="542007171693138492" name="navigation_menu">"Navigācijas izvēlne"</string>
     <string msgid="6610465462668679431" name="not_selected">"Nav atlasīts"</string>
-    <string msgid="875452955155264703" name="off">"Izslēgts"</string>
-    <string msgid="8655164131929253426" name="on">"Ieslēgts"</string>
     <string msgid="5941395253238309765" name="range_end">"Diapazona beigas"</string>
     <string msgid="7097486360902471446" name="range_start">"Diapazona sākums"</string>
     <string msgid="6420018528474762666" name="search_bar_search">"Meklēšana"</string>
     <string msgid="6043586758067023" name="selected">"Atlasīts"</string>
     <string msgid="3962933905051144957" name="snackbar_dismiss">"Noraidīt"</string>
+    <string msgid="4139871816613051306" name="state_empty">"Tukšs"</string>
+    <string msgid="5834637030682409883" name="state_off">"Izslēgts"</string>
+    <string msgid="1490883874751719580" name="state_on">"Ieslēgts"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
     <string msgid="7189888345201419934" name="suggestions_available">"Tālāk ir sniegti ieteikumi"</string>
     <string msgid="2561197295334830845" name="switch_role">"Slēdzis"</string>
@@ -78,6 +79,8 @@
     <string msgid="994099543833979061" name="time_picker_minute_text_field">"(minūtes)"</string>
     <string msgid="7352665290700284516" name="time_picker_period_toggle_description">"Atlasīt “AM” (priekšpusdienā) vai “PM” (pēcpusdienā)"</string>
     <string msgid="2232702812657998674" name="time_picker_pm">"PM"</string>
+    <string msgid="3765533235322692011" name="tooltip_description">"rīka padoms"</string>
+    <string msgid="3124740595719787496" name="tooltip_label">"rādīt rīka padomu"</string>
     <string msgid="2732804537909054941" name="tooltip_long_press_label">"Rādīt rīka padomu"</string>
     <string msgid="8191239805703103845" name="tooltip_pane_description">"Rīka padoms"</string>
 </resources>

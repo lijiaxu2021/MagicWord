@@ -22,6 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.Composable
@@ -167,7 +170,7 @@ fun TestScreen() {
                     onClick = { viewModel.setTestCandidates(null) },
                     modifier = Modifier.align(Alignment.Center)
                 ) {
-                    Icon(androidx.compose.material.icons.Icons.Default.Close, "Exit Selection Mode")
+                    Icon(Icons.Filled.Close, "Exit Selection Mode")
                 }
             }
             
@@ -175,7 +178,7 @@ fun TestScreen() {
                 onClick = { showHistory = true },
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                Icon(androidx.compose.material.icons.Icons.Default.History, "Test History")
+                Icon(Icons.Filled.History, "Test History")
             }
         }
 

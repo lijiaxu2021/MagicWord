@@ -54,13 +54,14 @@
     <string msgid="7933458017204019916" name="indeterminate">"Parcialmente selecionada"</string>
     <string msgid="542007171693138492" name="navigation_menu">"Menu de navegação"</string>
     <string msgid="6610465462668679431" name="not_selected">"Não selecionado"</string>
-    <string msgid="875452955155264703" name="off">"Desativado"</string>
-    <string msgid="8655164131929253426" name="on">"Ativado"</string>
     <string msgid="5941395253238309765" name="range_end">"Fim do intervalo"</string>
     <string msgid="7097486360902471446" name="range_start">"Início do intervalo"</string>
     <string msgid="6420018528474762666" name="search_bar_search">"Pesquisar"</string>
     <string msgid="6043586758067023" name="selected">"Selecionado"</string>
     <string msgid="3962933905051144957" name="snackbar_dismiss">"Ignorar"</string>
+    <string msgid="4139871816613051306" name="state_empty">"Vazio"</string>
+    <string msgid="5834637030682409883" name="state_off">"Desativado"</string>
+    <string msgid="1490883874751719580" name="state_on">"Ativado"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
     <string msgid="7189888345201419934" name="suggestions_available">"Sugestões abaixo"</string>
     <string msgid="2561197295334830845" name="switch_role">"Mudar"</string>
@@ -78,6 +79,8 @@
     <string msgid="994099543833979061" name="time_picker_minute_text_field">"para minutos"</string>
     <string msgid="7352665290700284516" name="time_picker_period_toggle_description">"Selecione AM ou PM"</string>
     <string msgid="2232702812657998674" name="time_picker_pm">"PM"</string>
+    <string msgid="3765533235322692011" name="tooltip_description">"sugestão"</string>
+    <string msgid="3124740595719787496" name="tooltip_label">"mostrar sugestão"</string>
     <string msgid="2732804537909054941" name="tooltip_long_press_label">"Mostrar sugestão"</string>
     <string msgid="8191239805703103845" name="tooltip_pane_description">"Sugestão"</string>
 </resources>

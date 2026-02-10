@@ -92,6 +92,9 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         }
     }
     
+    // Export Library Selection State
+    var selectedExportLibraries by remember { mutableStateOf(setOf<Int>()) }
+
     // Bulk Import Sheet State
     var showImportSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -402,9 +405,6 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
 
     // Add Library Dialog State
     var showAddLibraryDialog by remember { mutableStateOf(false) }
-
-    // Export Library Selection State
-    var selectedExportLibraries by remember { mutableStateOf(setOf<Int>()) }
 
     // Library Switcher Bottom Sheet
     if (showLibrarySheet) {

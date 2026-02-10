@@ -54,13 +54,14 @@
     <string msgid="7933458017204019916" name="indeterminate">"ഭാഗികമായി ചെക്ക് മാർക്കിട്ടു"</string>
     <string msgid="542007171693138492" name="navigation_menu">"നാവിഗേഷൻ മെനു"</string>
     <string msgid="6610465462668679431" name="not_selected">"തിരഞ്ഞെടുത്തില്ല"</string>
-    <string msgid="875452955155264703" name="off">"ഓഫാണ്"</string>
-    <string msgid="8655164131929253426" name="on">"ഓണാണ്"</string>
     <string msgid="5941395253238309765" name="range_end">"ശ്രേണിയുടെ അവസാനം"</string>
     <string msgid="7097486360902471446" name="range_start">"ശ്രേണിയുടെ ആരംഭം"</string>
     <string msgid="6420018528474762666" name="search_bar_search">"തിരയുക"</string>
     <string msgid="6043586758067023" name="selected">"തിരഞ്ഞെടുത്തു"</string>
     <string msgid="3962933905051144957" name="snackbar_dismiss">"ഡിസ്‌മിസ് ചെയ്യുക"</string>
+    <string msgid="4139871816613051306" name="state_empty">"ശൂന്യം"</string>
+    <string msgid="5834637030682409883" name="state_off">"ഓഫാണ്"</string>
+    <string msgid="1490883874751719580" name="state_on">"ഓണാണ്"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
     <string msgid="7189888345201419934" name="suggestions_available">"നിദ്ദേശങ്ങൾ ചുവടെയുണ്ട്"</string>
     <string msgid="2561197295334830845" name="switch_role">"മാറുക"</string>
@@ -78,6 +79,8 @@
     <string msgid="994099543833979061" name="time_picker_minute_text_field">"മിനിറ്റ് നേരത്തേക്ക്"</string>
     <string msgid="7352665290700284516" name="time_picker_period_toggle_description">"AM അല്ലെങ്കിൽ PM തിരഞ്ഞെടുക്കുക"</string>
     <string msgid="2232702812657998674" name="time_picker_pm">"PM"</string>
+    <string msgid="3765533235322692011" name="tooltip_description">"ടൂൾടിപ്പ്"</string>
+    <string msgid="3124740595719787496" name="tooltip_label">"ടൂൾടിപ്പ് കാണിക്കുക"</string>
     <string msgid="2732804537909054941" name="tooltip_long_press_label">"ടൂൾടിപ്പ് കാണിക്കുക"</string>
     <string msgid="8191239805703103845" name="tooltip_pane_description">"ടൂൾടിപ്പ്"</string>
 </resources>
