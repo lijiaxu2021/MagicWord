@@ -51,6 +51,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
+import com.magicword.app.ui.components.SlideInEntry
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
