@@ -29,6 +29,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WordsScreen(onOpenSettings: () -> Unit) {
@@ -39,6 +42,12 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
     val words by viewModel.allWords.collectAsState(initial = emptyList())
+    // Create a mutable state list for reordering to work smoothly in UI before DB update
+    var reorderableWords by remember { mutableStateOf(words) }
+    LaunchedEffect(words) {
+        reorderableWords = words
+    }
+
     val libraries by viewModel.allLibraries.collectAsState(initial = emptyList())
     val currentLibraryId by viewModel.currentLibraryId.collectAsState()
     
@@ -58,12 +67,35 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
 
     // Scroll Control
     val listState = rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
+        // Update UI list first
+        reorderableWords = reorderableWords.toMutableList().apply {
+            add(to.index, removeAt(from.index))
+        }
+        // Then update DB (debounce this in real app, but for now direct update)
+        // We need to update sortOrder for affected items.
+        // Assuming we have sortOrder field and logic.
+        // For simplicity, let's just re-assign sortOrder based on new index
+        val updatedList = reorderableWords.mapIndexed { index, word -> word.copy(sortOrder = index) }
+        viewModel.updateWords(updatedList)
+    }
+
     val pagerState = rememberPagerState(pageCount = { words.size })
     val scope = rememberCoroutineScope()
     
     // Bulk Import Sheet State
     var showImportSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Sync Pager State with List Scroll
+    LaunchedEffect(isListMode) {
+        if (isListMode) {
+            // Scroll list to current pager item
+            listState.scrollToItem(pagerState.currentPage)
+        } else {
+            // Scroll pager to current list item (if user scrolled list) - Optional, usually user taps item
+        }
+    }
 
     // Animation Transition
     AnimatedContent(
@@ -141,55 +173,60 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                         state = listState,
                         modifier = Modifier.weight(1f)
                     ) {
-                        itemsIndexed(words) { index, word ->
-                            val isSelected = selectedWords.contains(word.id)
-                            
-                            // Drag and Drop Logic (Simplified: Long press to reorder logic to be implemented properly later with ReorderableLazyColumn library or custom logic)
-                            // For now, user asked for "Long press to drag". Since standard LazyColumn doesn't support easy reordering without external libs,
-                            // we will use a placeholder or custom implementation if feasible. 
-                            // Given constraints, we'll focus on the "drag to reorder" intent by adding up/down arrows in edit mode or similar if drag is too complex without libs.
-                            // BUT, user insisted on "drag". We can use `detectDragGesturesAfterLongPress` on the item.
-                            
-                            ListItem(
-                                leadingContent = {
-                                    Text("${index + 1}", style = MaterialTheme.typography.labelMedium)
-                                },
-                                headlineContent = { Text(word.word) },
-                                supportingContent = { 
-                                    Text("${word.definitionCn} · 复习: ${word.reviewCount}", maxLines = 1) 
-                                },
-                                trailingContent = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = isSelected, onCheckedChange = { checked ->
-                                            selectedWords = if (checked) selectedWords + word.id else selectedWords - word.id
-                                        })
-                                        // Reorder Handle (Visual only for now, needs complex logic to actually move items in list)
-                                        Icon(Icons.Default.DragHandle, "Reorder", modifier = Modifier.padding(start = 8.dp))
-                                    }
-                                },
-                                modifier = Modifier
-                                    .clickable { 
-                                        // Double tap to return to card mode at this index?
-                                        // User said: "Double click a word to return to card mode"
-                                    }
-                                    .pointerInput(Unit) {
-                                        detectTapGestures(
-                                            onDoubleTap = {
-                                                scope.launch {
-                                                    pagerState.scrollToPage(index)
-                                                    isListMode = false
-                                                }
-                                            },
-                                            onTap = {
-                                                editingWord = word
-                                            },
-                                            onLongPress = {
-                                                // Start Drag Reorder (Placeholder)
+                        itemsIndexed(reorderableWords, key = { _, word -> word.id }) { index, word ->
+                            ReorderableItem(reorderableState, key = word.id) { isDragging ->
+                                val elevation = animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                                val isSelected = selectedWords.contains(word.id)
+                                
+                                Surface(shadowElevation = elevation.value) {
+                                    ListItem(
+                                        leadingContent = {
+                                            Text("${index + 1}", style = MaterialTheme.typography.labelMedium)
+                                        },
+                                        headlineContent = { Text(word.word) },
+                                        supportingContent = { 
+                                            Text("${word.definitionCn} · 复习: ${word.reviewCount}", maxLines = 1) 
+                                        },
+                                        trailingContent = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Checkbox(checked = isSelected, onCheckedChange = { checked ->
+                                                    selectedWords = if (checked) selectedWords + word.id else selectedWords - word.id
+                                                })
+                                                // Reorder Handle
+                                                Icon(
+                                                    Icons.Default.DragHandle,
+                                                    "Reorder",
+                                                    modifier = Modifier.draggableHandle().padding(start = 8.dp)
+                                                )
                                             }
-                                        )
-                                    }
-                            )
-                            Divider()
+                                        },
+                                        modifier = Modifier
+                                            .clickable { 
+                                                // Double tap logic handled below
+                                            }
+                                            .pointerInput(Unit) {
+                                                detectTapGestures(
+                                                    onDoubleTap = {
+                                                        scope.launch {
+                                                            // Save state first
+                                                            prefs.edit().putInt("last_index_${currentLibraryId}", index).apply()
+                                                            if (currentLibrary != null) {
+                                                                viewModel.updateLibraryLastIndex(currentLibrary.id, index)
+                                                            }
+                                                            // Switch and Scroll
+                                                            pagerState.scrollToPage(index)
+                                                            isListMode = false
+                                                        }
+                                                    },
+                                                    onTap = {
+                                                        editingWord = word
+                                                    }
+                                                )
+                                            }
+                                    )
+                                    Divider()
+                                }
+                            }
                         }
                     }
                 }
