@@ -100,8 +100,13 @@ fun MainScreen() {
     )
 
     // Observe Jump Event to switch tabs
-    LaunchedEffect(Unit) {
-        viewModel.jumpToWordEvent.collect {
+    // MainScreen doesn't need to observe this if WordsScreen handles it.
+    // WordsScreen now listens to pendingJumpWordId.
+    // However, if we are on a different tab (e.g. Test), we might want to switch to Words tab.
+    val pendingJumpWordId by viewModel.pendingJumpWordId.collectAsState()
+    
+    LaunchedEffect(pendingJumpWordId) {
+        if (pendingJumpWordId != null) {
             pagerState.scrollToPage(1) // Switch to Words tab (Index 1)
         }
     }

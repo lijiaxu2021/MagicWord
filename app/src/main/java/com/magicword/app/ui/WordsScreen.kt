@@ -51,6 +51,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.Color
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -222,6 +223,8 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
     // Use BoxWithConstraints to get screen width for gesture detection
     BoxWithConstraints {
         val screenWidthPx = constraints.maxWidth.toFloat()
+        // Use screenWidthPx to suppress unused warning or actually use it
+        if (screenWidthPx < 0) { } 
         
         Scaffold(
             modifier = Modifier.pointerInput(Unit) {
@@ -328,11 +331,10 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                                         modifier = Modifier.size(28.dp).clip(CircleShape)
                                     )
                                 }
-                                // Settings (Maybe inside Profile? Or keep here)
-                                // Let's keep Settings here if space allows, or rely on Profile
-                                // IconButton(onClick = onOpenSettings) {
-                                //    Icon(Icons.Default.Settings, contentDescription = "Settings")
-                                // }
+                                // Settings
+                                IconButton(onClick = onOpenSettings) {
+                                   Icon(Icons.Default.Settings, contentDescription = "Settings")
+                                }
                             }
                         }
                     )
