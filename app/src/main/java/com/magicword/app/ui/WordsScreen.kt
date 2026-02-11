@@ -235,22 +235,19 @@ fun WordsScreen(onOpenSettings: () -> Unit, onJumpToTest: () -> Unit) {
                                 }
                                 
                                 if (showTestTypeDialog) {
-                                    TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
-                                        val selectedList = words.filter { selectedWords.contains(it.id) }
-                                        viewModel.setTestCandidates(selectedList)
-                                        viewModel.setTestType(type)
-                                        showTestTypeDialog = false
-                                        onJumpToTest() // Navigate to Test Screen
-                                    })
+                                        TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
+                                            val selectedList = words.filter { selectedWords.contains(it.id) }
+                                            viewModel.setTestCandidates(selectedList)
+                                            viewModel.setTestType(type)
+                                            showTestTypeDialog = false
+                                            onJumpToTest() // Navigate to Test Screen
+                                        })
+                                    }
                                 }
+                            } else {
+                                // Empty navigation icon to keep spacing or add back button if needed
                             }
-                        } else {
-                            // Quick Nav Button replaced by nothing or maybe settings shortcut?
-                            // User said: "Pull down from top... or drawer from bottom". 
-                            // We implemented "Click Title -> BottomSheet" for library switch.
-                            // Left side can be empty or something else.
-                        }
-                    },
+                        },
                     actions = {
                         // Action buttons based on mode
                         if (isListMode) {

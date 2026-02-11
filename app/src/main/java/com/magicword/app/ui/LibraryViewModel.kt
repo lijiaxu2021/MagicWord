@@ -51,8 +51,10 @@ import com.magicword.app.utils.AppConfig
 import com.magicword.app.data.WordList
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 
-class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
+class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     
     // TTS Engine
     private var tts: TextToSpeech? = null
