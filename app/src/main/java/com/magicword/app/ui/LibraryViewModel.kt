@@ -235,13 +235,13 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             Return a SINGLE JSON Object (NOT Array).
             
             STRICT JSON FORMAT RULES:
-            1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run".
+            1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run". If input is "give_up", return "give_up" (keep underscores) or "give up".
             2. "phonetic": String.
             3. "senses": Object (Key-Value pairs). Keys like "sense_1", "sense_2", etc.
                - Include as many senses as necessary to cover COMMON meanings.
                - DO NOT force 10 senses. If a word only has 2 meanings, only return "sense_1" and "sense_2".
                - Value Object: { "pos": "...", "meaning": "..." }.
-               - "pos": String (e.g., "n", "v", "adj").
+               - "pos": String (e.g., "n", "v", "adj", "phrase").
                - "meaning": String (Chinese definition).
             4. "definition_en": String (Brief English definition).
             5. "example": String. Format: "En sentence. Cn translation."
@@ -630,11 +630,11 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                     
                     CRITICAL INSTRUCTION FOR PHRASES:
                     If the text contains a phrase (e.g., "give up", "look forward to"), you MUST:
-                    1. Extract the phrase itself as a single entry (e.g., "give up").
-                    2. Extract the constituent words individually IF they are meaningful (e.g., "give", "up").
-                    3. Do NOT split a phrase if it means you lose the phrase entry. Prioritize keeping the phrase intact.
+                    1. Extract the phrase itself as a single entry.
+                    2. IMPORTANT: Replace spaces in phrases with UNDERSCORES to prevent splitting later. (e.g., return "give_up", "look_forward_to").
+                    3. Do NOT extract the constituent words individually if the phrase is the main point.
                     
-                    Return ONLY a JSON Array of strings. Example: ["give up", "give", "up", "apple", "banana"]
+                    Return ONLY a JSON Array of strings. Example: ["give_up", "apple", "banana"]
                     
                     Text: "${text.take(4000)}"
                 """.trimIndent()
@@ -759,6 +759,11 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         importedWordsSet: MutableSet<String>
     ) {
         try {
+            // Restore spaces for phrases before sending to AI for definition (or keep underscores if AI handles them better? Let's restore to be safe for "word" field match)
+            // Actually, keep underscores for AI input so it knows it's a phrase, but ask AI to return "word" with spaces?
+            // Or just restore here.
+            // Let's pass the underscored version to AI, but tell AI to treat underscores as spaces.
+            
             val standardizedWords = fetchWordDefinitionsFromAi(chunk)
             
             if (standardizedWords.size < chunk.size) {
@@ -766,16 +771,22 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             }
 
             standardizedWords.forEach { stdWord ->
+                // Restore spaces in the final word if it had underscores (and was likely a phrase)
+                // If AI returns "give_up", we save "give up".
+                // If AI returns "give up" (smartly), we save "give up".
+                val finalWordText = stdWord.word.replace("_", " ")
+
                 val targetLibraryId = if (AppConfig.saveLocationId > 0) AppConfig.saveLocationId else _currentLibraryId.value
                 val wordToSave = stdWord.toEntity(
                     libraryId = targetLibraryId,
                     example = stdWord.example,
                     memoryMethod = stdWord.memoryMethod,
                     definitionEn = stdWord.definitionEn
-                )
+                ).copy(word = finalWordText) // Override word text
+                
                 wordDao.insertWord(wordToSave)
-                importedWordsSet.add(stdWord.word.lowercase().trim())
-                _importLogs.value = _importLogs.value + "📥 已保存: ${stdWord.word}"
+                importedWordsSet.add(finalWordText.lowercase().trim())
+                _importLogs.value = _importLogs.value + "📥 已保存: $finalWordText"
             }
         } catch (e: Exception) {
             if (retryCount < maxRetries) {
@@ -801,13 +812,13 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             Return a JSON Array of objects.
             
             STRICT JSON FORMAT RULES:
-            1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run".
+            1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run". If input is "give_up", return "give_up" (keep underscores) or "give up".
             2. "phonetic": String.
             3. "senses": Object (Key-Value pairs). Keys like "sense_1", "sense_2", etc.
                - Include as many senses as necessary to cover COMMON meanings.
                - DO NOT force 10 senses. If a word only has 2 meanings, only return "sense_1" and "sense_2".
                - Value Object: { "pos": "...", "meaning": "..." }.
-               - "pos": String (e.g., "n", "v", "adj").
+               - "pos": String (e.g., "n", "v", "adj", "phrase").
                - "meaning": String (Chinese definition).
             4. "definition_en": String (Brief English definition).
             5. "example": String. Format: "En sentence. Cn translation."
