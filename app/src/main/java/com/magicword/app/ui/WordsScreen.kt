@@ -48,6 +48,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -99,6 +101,9 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
 
     // State to track if we just navigated from search to prevent auto-restore
     var isNavigatingFromSearch by remember { mutableStateOf(false) }
+
+    // Side List State
+    var showSideList by remember { mutableStateOf(false) }
     
     // Jump Navigation Logic
     var pendingJumpWordId by remember { mutableStateOf<Int?>(null) }
@@ -107,6 +112,7 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
         viewModel.jumpToWordEvent.collect { (_, wordId) ->
             pendingJumpWordId = wordId
             isNavigatingFromSearch = true // Prevent auto-restore logic interfering
+            isListMode = false // Force Card Mode
         }
     }
 
@@ -319,37 +325,50 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                     )
                     
                     // 2. Persistent Search Bar (Always Visible under Title)
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { query -> 
-                            searchQuery = query
-                            // Auto-scroll logic if in List Mode
-                            if (isListMode && query.isNotEmpty()) {
-                                 val index = words.indexOfFirst { it.word.contains(query, ignoreCase = true) }
-                                 if (index != -1) {
-                                     scope.launch { listState.animateScrollToItem(index) }
-                                 }
-                            }
-                        },
-                        placeholder = { Text("全局搜索 / AI 录入 (Enter)") },
-                        leadingIcon = { Icon(Icons.Default.Search, null) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp),
-                        singleLine = true,
-                        shape = RoundedCornerShape(50), // Rounded style
-                        colors = TextFieldDefaults.colors(
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(
-                            onSearch = {
-                                viewModel.handleGlobalSearch(searchQuery)
-                            }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { query -> 
+                                searchQuery = query
+                                // Auto-scroll logic if in List Mode
+                                if (isListMode && query.isNotEmpty()) {
+                                     val index = words.indexOfFirst { it.word.contains(query, ignoreCase = true) }
+                                     if (index != -1) {
+                                         scope.launch { listState.animateScrollToItem(index) }
+                                     }
+                                }
+                            },
+                            placeholder = { Text("全局搜索 / AI 录入 (Enter)") },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            shape = RoundedCornerShape(50), // Rounded style
+                            colors = TextFieldDefaults.colors(
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(
+                                onSearch = {
+                                    viewModel.handleGlobalSearch(searchQuery)
+                                }
+                            )
                         )
-                    )
+                        
+                        if (!isListMode) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Toggle Side List Button
+                            IconButton(onClick = { showSideList = !showSideList }) {
+                                Icon(
+                                    imageVector = if (showSideList) Icons.Default.KeyboardArrowRight else Icons.Default.List,
+                                    contentDescription = "Toggle List"
+                                )
+                            }
+                        }
+                    }
                 }
             },
             floatingActionButton = {
@@ -467,36 +486,77 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                         Text("当前词库为空，请添加单词")
                     }
                 } else {
-                    VerticalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        val word = words[page]
-                        LaunchedEffect(page) {
-                             if (pagerState.currentPage == page) {
-                                 viewModel.incrementReviewCount(word)
-                             }
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        VerticalPager(
+                            state = pagerState,
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                        ) { page ->
+                            val word = words[page]
+                            LaunchedEffect(page) {
+                                 if (pagerState.currentPage == page) {
+                                     viewModel.incrementReviewCount(word)
+                                 }
+                            }
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(modifier = Modifier
+                                    .fillMaxSize()
+                                    .pointerInput(Unit) {
+                                         detectTapGestures(
+                                             onLongPress = { isListMode = true }
+                                         )
+                                    }
+                                ) {
+                                    WordCard(
+                                        word = word,
+                                        onEditClick = { editingWord = word },
+                                        onSpeakClick = { viewModel.speak(word.word) }
+                                    )
+                                }
+                            }
                         }
                         
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
+                        // Side List
+                        AnimatedVisibility(
+                            visible = showSideList,
+                            enter = slideInHorizontally { it } + expandHorizontally(expandFrom = Alignment.Start),
+                            exit = slideOutHorizontally { it } + shrinkHorizontally(shrinkTowards = Alignment.Start)
                         ) {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .pointerInput(Unit) {
-                                     detectTapGestures(
-                                         onLongPress = { isListMode = true }
-                                     )
-                                }
+                            val sideListState = rememberLazyListState()
+                            LaunchedEffect(pagerState.currentPage) {
+                                 sideListState.animateScrollToItem(pagerState.currentPage)
+                            }
+                            LazyColumn(
+                                state = sideListState,
+                                modifier = Modifier
+                                    .width(60.dp)
+                                    .fillMaxHeight()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                WordCard(
-                                    word = word,
-                                    onEditClick = { editingWord = word },
-                                    onSpeakClick = { viewModel.speak(word.word) }
-                                )
+                                itemsIndexed(words) { index, word ->
+                                    val isSelected = index == pagerState.currentPage
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(40.dp)
+                                            .clickable { scope.launch { pagerState.scrollToPage(index) } },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = word.word,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
