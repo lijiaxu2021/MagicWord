@@ -37,12 +37,23 @@ import com.magicword.app.data.Word
 import com.magicword.app.data.WordList
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.BoxWithConstraints
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WordListScreen(viewModel: LibraryViewModel) {
     val wordLists by viewModel.allWordLists.collectAsState(initial = emptyList())
     val currentWordListId by viewModel.currentWordListId.collectAsState()
     val allLibraries by viewModel.allLibraries.collectAsState(initial = emptyList())
+    
+    // Ensure persistence of current word list ID is handled by ViewModel init and updates
+    // Check if currentWordListId is valid
+    LaunchedEffect(wordLists) {
+        if (wordLists.isNotEmpty() && currentWordListId == -1) {
+            viewModel.setCurrentWordListId(wordLists.first().id)
+        }
+    }
     
     var showCreateDialog by remember { mutableStateOf(false) }
     
@@ -61,9 +72,32 @@ fun WordListScreen(viewModel: LibraryViewModel) {
     // Map of Library ID to Start Index (for jumping)
     val libraryIndexMap = remember { mutableStateMapOf<Int, Int>() }
     
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            floatingActionButton = {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenWidthPx = constraints.maxWidth.toFloat()
+        
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Scaffold(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = { },
+                            onDragCancel = { },
+                            onHorizontalDrag = { change, dragAmount ->
+                                // Swipe Left (Open Drawer): dragAmount < 0
+                                // Swipe Right (Close Drawer): dragAmount > 0 (handled by drawer overlay usually, but nice to have)
+                                
+                                // Open Drawer logic: Swipe Left from Right Edge
+                                if (dragAmount < -10 && !showDrawer && change.position.x > (screenWidthPx - 100)) {
+                                    showDrawer = true
+                                    change.consume()
+                                }
+                            }
+                        )
+                    },
+                floatingActionButton = {
                 FloatingActionButton(onClick = { showCreateDialog = true }) {
                     Icon(Icons.Default.Add, "Create List")
                 }

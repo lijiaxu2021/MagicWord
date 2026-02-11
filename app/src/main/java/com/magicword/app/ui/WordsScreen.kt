@@ -6,6 +6,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -196,153 +198,172 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
         }
     }
 
-    // Drawer State (Removed per user request)
-    // val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
     // MAIN LAYOUT STRUCTURE
     // Replaced Drawer with direct Scaffold
-    Scaffold(
-        topBar = {
-            Column(
-                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-            ) {
-                // 1. Top Bar (Title + Actions)
-                CenterAlignedTopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { showLibrarySheet = true }
-                        ) {
-                            Text(
-                                text = currentLibrary?.name ?: "默认词库",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
-                        }
-                    },
-                    navigationIcon = {
-                        if (isListMode && selectedWords.isNotEmpty()) {
-                            Row {
-                                // Move Test and Delete to left
-                                var showTestTypeDialog by remember { mutableStateOf(false) }
-                                IconButton(onClick = { showTestTypeDialog = true }) {
-                                    Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
+    // Use BoxWithConstraints to get screen width for gesture detection
+    BoxWithConstraints {
+        val screenWidthPx = constraints.maxWidth.toFloat()
+        
+        Scaffold(
+            modifier = Modifier.pointerInput(Unit) {
+                detectHorizontalDragGestures { change, dragAmount ->
+                    // Swipe Right to Open Library Sheet (from Left Edge)
+                    if (dragAmount > 10 && !showLibrarySheet && change.position.x < 100) {
+                        showLibrarySheet = true
+                        change.consume()
+                    }
+                }
+            },
+            topBar = {
+                Column(
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                ) {
+                    // 1. Top Bar (Title + Actions)
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable { showLibrarySheet = true }
+                            ) {
+                                Text(
+                                    text = currentLibrary?.name ?: "默认词库",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
+                            }
+                        },
+                        navigationIcon = {
+                            if (isListMode && selectedWords.isNotEmpty()) {
+                                Row {
+                                    // Move Test and Delete to left
+                                    var showTestTypeDialog by remember { mutableStateOf(false) }
+                                    IconButton(onClick = { showTestTypeDialog = true }) {
+                                        Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    IconButton(onClick = {
+                                        viewModel.deleteWords(selectedWords.toList())
+                                        selectedWords = emptySet()
+                                    }) {
+                                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                                    }
+                                    
+                                    if (showTestTypeDialog) {
+                                        TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
+                                            val selectedList = words.filter { selectedWords.contains(it.id) }
+                                            viewModel.setTestCandidates(selectedList)
+                                            viewModel.setTestType(type)
+                                            showTestTypeDialog = false
+                                            onJumpToTest() // Navigate to Test Screen
+                                        })
+                                    }
                                 }
-                                IconButton(onClick = {
-                                    viewModel.deleteWords(selectedWords.toList())
-                                    selectedWords = emptySet()
-                                }) {
-                                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                            } else {
+                                // Menu Icon for Library Sheet
+                                IconButton(onClick = { showLibrarySheet = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Menu,
+                                        contentDescription = "Libraries"
+                                    )
+                                }
+                            }
+                        },
+                        actions = {
+                            // Action buttons based on mode
+                            if (isListMode) {
+                                // Test/Delete Selected - Moved to Left (navigationIcon)
+                                
+                                // Sort
+                                Box {
+                                    IconButton(onClick = { showSortMenu = true }) {
+                                        Icon(Icons.Default.Sort, "Sort")
+                                    }
+                                    DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                                        DropdownMenuItem(text = { Text("创建时间 (新->旧)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.CREATED_AT_DESC); showSortMenu = false })
+                                        DropdownMenuItem(text = { Text("创建时间 (旧->新)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.CREATED_AT_ASC); showSortMenu = false })
+                                        DropdownMenuItem(text = { Text("字母顺序 (A->Z)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.ALPHA_ASC); showSortMenu = false })
+                                        DropdownMenuItem(text = { Text("学习次数 (高->低)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.REVIEW_COUNT_DESC); showSortMenu = false })
+                                    }
                                 }
                                 
-                                if (showTestTypeDialog) {
-                                    TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
-                                        val selectedList = words.filter { selectedWords.contains(it.id) }
-                                        viewModel.setTestCandidates(selectedList)
-                                        viewModel.setTestType(type)
-                                        showTestTypeDialog = false
-                                        onJumpToTest() // Navigate to Test Screen
-                                    })
+                                // Select All
+                                TextButton(onClick = {
+                                    selectedWords = if (selectedWords.size == words.size) emptySet() else words.map { it.id }.toSet()
+                                }) {
+                                    Text(if (selectedWords.size == words.size) "全不选" else "全选")
                                 }
-                            }
-                        } else {
-                            // Profile Icon
-                            IconButton(onClick = onOpenProfile) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = "Profile",
-                                    modifier = Modifier.size(32.dp).clip(CircleShape)
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        // Action buttons based on mode
-                        if (isListMode) {
-                            // Test/Delete Selected - Moved to Left (navigationIcon)
-                            
-                            // Sort
-                            Box {
-                                IconButton(onClick = { showSortMenu = true }) {
-                                    Icon(Icons.Default.Sort, "Sort")
+                                
+                                IconButton(onClick = { isListMode = false }) {
+                                    Icon(Icons.Default.Close, "Close List")
                                 }
-                                DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
-                                    DropdownMenuItem(text = { Text("创建时间 (新->旧)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.CREATED_AT_DESC); showSortMenu = false })
-                                    DropdownMenuItem(text = { Text("创建时间 (旧->新)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.CREATED_AT_ASC); showSortMenu = false })
-                                    DropdownMenuItem(text = { Text("字母顺序 (A->Z)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.ALPHA_ASC); showSortMenu = false })
-                                    DropdownMenuItem(text = { Text("学习次数 (高->低)") }, onClick = { viewModel.setSortOption(LibraryViewModel.SortOption.REVIEW_COUNT_DESC); showSortMenu = false })
+                            } else {
+                                // Card Mode Actions
+                                IconButton(onClick = { isListMode = true }) {
+                                    Icon(Icons.Default.List, contentDescription = "List Mode")
                                 }
+                                // Profile Icon (Moved to Right)
+                                IconButton(onClick = onOpenProfile) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccountCircle,
+                                        contentDescription = "Profile",
+                                        modifier = Modifier.size(28.dp).clip(CircleShape)
+                                    )
+                                }
+                                // Settings (Maybe inside Profile? Or keep here)
+                                // Let's keep Settings here if space allows, or rely on Profile
+                                // IconButton(onClick = onOpenSettings) {
+                                //    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                                // }
                             }
-                            
-                            // Select All
-                            TextButton(onClick = {
-                                selectedWords = if (selectedWords.size == words.size) emptySet() else words.map { it.id }.toSet()
-                            }) {
-                                Text(if (selectedWords.size == words.size) "全不选" else "全选")
-                            }
-                            
-                            IconButton(onClick = { isListMode = false }) {
-                                Icon(Icons.Default.Close, "Close List")
-                            }
-                        } else {
-                            // Card Mode Actions
-                            IconButton(onClick = { isListMode = true }) {
-                                Icon(Icons.Default.List, contentDescription = "List Mode")
-                            }
-                            IconButton(onClick = onOpenSettings) {
-                                Icon(Icons.Default.Settings, contentDescription = "Settings")
-                            }
-                        }
-                    }
-                )
-                
-                // 2. Persistent Search Bar (Always Visible under Title)
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { query -> 
-                        searchQuery = query
-                        // Auto-scroll logic if in List Mode
-                        if (isListMode && query.isNotEmpty()) {
-                             val index = words.indexOfFirst { it.word.contains(query, ignoreCase = true) }
-                             if (index != -1) {
-                                 scope.launch { listState.animateScrollToItem(index) }
-                             }
-                        }
-                    },
-                    placeholder = { Text("全局搜索 / AI 录入 (Enter)") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp),
-                    singleLine = true,
-                    shape = RoundedCornerShape(50), // Rounded style
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            viewModel.handleGlobalSearch(searchQuery)
                         }
                     )
-                )
+                    
+                    // 2. Persistent Search Bar (Always Visible under Title)
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { query -> 
+                            searchQuery = query
+                            // Auto-scroll logic if in List Mode
+                            if (isListMode && query.isNotEmpty()) {
+                                 val index = words.indexOfFirst { it.word.contains(query, ignoreCase = true) }
+                                 if (index != -1) {
+                                     scope.launch { listState.animateScrollToItem(index) }
+                                 }
+                            }
+                        },
+                        placeholder = { Text("全局搜索 / AI 录入 (Enter)") },
+                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 8.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(50), // Rounded style
+                        colors = TextFieldDefaults.colors(
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                viewModel.handleGlobalSearch(searchQuery)
+                            }
+                        )
+                    )
+                }
+            },
+            floatingActionButton = {
+                if (isListMode) {
+                    ExtendedFloatingActionButton(
+                        onClick = { showImportSheet = true },
+                        icon = { Icon(Icons.Default.Add, "Import") },
+                        text = { Text("导入") },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
-        },
-        floatingActionButton = {
-            if (isListMode) {
-                ExtendedFloatingActionButton(
-                    onClick = { showImportSheet = true },
-                    icon = { Icon(Icons.Default.Add, "Import") },
-                    text = { Text("导入") },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    ) { padding ->
+        ) { padding ->
         // CONTENT AREA
         AnimatedContent(
             targetState = isListMode,

@@ -322,8 +322,10 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                 // Convert to Entity and Insert
                 // Ensure timestamps are correct (System.currentTimeMillis())
                 val now = System.currentTimeMillis()
+                val targetLibraryId = _currentLibraryId.value
+                val targetLibraryId = if (AppConfig.saveLocationId > 0) AppConfig.saveLocationId else _currentLibraryId.value
                 val wordToSave = stdWord.toEntity(
-                    libraryId = _currentLibraryId.value,
+                    libraryId = targetLibraryId,
                     example = stdWord.example,
                     memoryMethod = stdWord.memoryMethod,
                     definitionEn = stdWord.definitionEn
@@ -806,7 +808,7 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                 // If AI returns "give up" (smartly), we save "give up".
                 val finalWordText = stdWord.word.replace("_", " ")
 
-                val targetLibraryId = if (AppConfig.saveLocationId > 0) AppConfig.saveLocationId else _currentLibraryId.value
+                val targetLibraryId = _currentLibraryId.value
                 val wordToSave = stdWord.toEntity(
                     libraryId = targetLibraryId,
                     example = stdWord.example,
