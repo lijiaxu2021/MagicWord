@@ -425,8 +425,8 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 val chunkQueue = ArrayDeque(wordsList.chunked(chunkSize).map { it to 0 })
                 val maxRetries = 3
                 
-                var processedCount = 0
-                val totalCount = chunkQueue.size // Initial chunks count, not counting retries as new items
+                // Track successfully imported words to verify at the end
+                val importedWordsSet = mutableSetOf<String>()
 
                 while (chunkQueue.isNotEmpty()) {
                     val (chunk, retryCount) = chunkQueue.pollFirst()!!
@@ -466,12 +466,17 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                             val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
                             val wordDetails: List<Word> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<Word>>() {}.type)
                             
+                            // Check if AI returned fewer words than requested
+                            if (wordDetails.size < chunk.size) {
+                                _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${wordDetails.size}/${chunk.size})，正在检查漏词..."
+                            }
+
                             wordDetails.forEach { detail ->
                                 val wordToSave = detail.copy(libraryId = _currentLibraryId.value)
                                 wordDao.insertWord(wordToSave)
+                                importedWordsSet.add(detail.word.lowercase().trim())
                                 _importLogs.value = _importLogs.value + "📥 已保存: ${detail.word}"
                             }
-                            processedCount++
                         } else {
                             throw Exception("AI 返回格式错误 (找不到 JSON Array)")
                         }
@@ -484,7 +489,76 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         }
                     }
                 }
-                _importLogs.value = _importLogs.value + "🎉 所有任务处理完毕！"
+                
+                // Step C: Verification and Retry for Missing Words
+                val missingWords = wordsList.filter { !importedWordsSet.contains(it.lowercase().trim()) }
+                
+                if (missingWords.isNotEmpty()) {
+                    _importLogs.value = _importLogs.value + "🔍 发现 ${missingWords.size} 个单词漏导，正在尝试重新处理..."
+                    
+                    // Re-queue missing words as new chunks
+                    val missingChunks = missingWords.chunked(chunkSize).map { it to 0 } // Reset retry count
+                    chunkQueue.addAll(missingChunks)
+                    
+                    // Process Retry Queue for Missing Words
+                    while (chunkQueue.isNotEmpty()) {
+                        val (chunk, retryCount) = chunkQueue.pollFirst()!!
+                        _importLogs.value = _importLogs.value + "Step C: 补录漏词 (剩余批次: ${chunkQueue.size})..."
+                        
+                         val chunkPrompt = """
+                            You are a strict JSON data generator. Analyze these English words: $chunk
+                            
+                            Return a JSON Array of objects.
+                            
+                            STRICT JSON FORMAT RULES:
+                            1. "word": String.
+                            2. "phonetic": String.
+                            3. "definition_cn": String (NOT List). Format: "pos. meaning".
+                            4. "definition_en": String.
+                            5. "example": String (NOT List). Format: "En sentence. Cn translation.\nEn sentence 2. Cn translation."
+                            6. "memory_method": String (NOT List). Escape double quotes inside strings with backslash.
+                            
+                            IMPORTANT: Ensure valid JSON syntax. No trailing commas.
+                            NO MARKDOWN. NO COMMENTS. ONLY JSON.
+                        """.trimIndent()
+
+                        val chunkRequest = AiRequest(
+                            model = "Qwen/Qwen2.5-7B-Instruct",
+                            messages = listOf(Message("user", chunkPrompt)),
+                            temperature = 0.3
+                        )
+                        
+                        try {
+                             val chunkResponse = RetrofitClient.api.chat(chunkRequest)
+                             val chunkContent = chunkResponse.choices.first().message.content
+                             val chunkJsonStart = chunkContent.indexOf('[')
+                             val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
+                             
+                             if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
+                                val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
+                                val wordDetails: List<Word> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<Word>>() {}.type)
+                                
+                                wordDetails.forEach { detail ->
+                                    val wordToSave = detail.copy(libraryId = _currentLibraryId.value)
+                                    wordDao.insertWord(wordToSave)
+                                    importedWordsSet.add(detail.word.lowercase().trim())
+                                    _importLogs.value = _importLogs.value + "📥 补录成功: ${detail.word}"
+                                }
+                             } else {
+                                throw Exception("AI 返回格式错误")
+                             }
+                        } catch(e: Exception) {
+                            if (retryCount < maxRetries) {
+                                _importLogs.value = _importLogs.value + "⚠️ 补录失败，重试 (重试 ${retryCount + 1}/$maxRetries)..."
+                                chunkQueue.addLast(chunk to (retryCount + 1))
+                            } else {
+                                _importLogs.value = _importLogs.value + "❌ 补录彻底失败: $chunk"
+                            }
+                        }
+                    }
+                }
+
+                _importLogs.value = _importLogs.value + "🎉 所有任务处理完毕！最终导入: ${importedWordsSet.size}/${wordsList.size}"
                 
             } catch (e: Exception) {
                 _importLogs.value = _importLogs.value + "❌ 致命错误: ${e.message}"
