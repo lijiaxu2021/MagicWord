@@ -105,10 +105,32 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
     val currentLibraryId: StateFlow<Int> = _currentLibraryId.asStateFlow()
 
+    // Study Library Selection (Multiple)
+    // Default to current library initially, or user can select multiple
+    private val _studyLibraryIds = MutableStateFlow<Set<Int>>(emptySet())
+    val studyLibraryIds: StateFlow<Set<Int>> = _studyLibraryIds.asStateFlow()
+
+    fun toggleStudyLibrary(libraryId: Int) {
+        val current = _studyLibraryIds.value.toMutableSet()
+        if (current.contains(libraryId)) {
+            current.remove(libraryId)
+        } else {
+            current.add(libraryId)
+        }
+        _studyLibraryIds.value = current
+    }
+    
+    fun setStudyLibraries(ids: Set<Int>) {
+        _studyLibraryIds.value = ids
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    val dueWords: Flow<List<Word>> = _currentLibraryId.flatMapLatest { id ->
-        // Fetch words due before NOW
-        wordDao.getDueWords(id, System.currentTimeMillis())
+    val dueWords: Flow<List<Word>> = combine(_currentLibraryId, _studyLibraryIds) { currentId, studyIds ->
+         // If studyIds is empty, default to current library
+         if (studyIds.isEmpty()) listOf(currentId) else studyIds.toList()
+    }.flatMapLatest { ids ->
+        // Fetch words due before NOW for ALL selected libraries
+        wordDao.getDueWordsForLibraries(ids, System.currentTimeMillis())
     }
 
     // Sorting State
@@ -515,7 +537,8 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 val maxRetries = 3
                 
                 // Track successfully imported words to verify at the end
-                val importedWordsSet = mutableSetOf<String>()
+                // Use Synchronized Set to prevent race conditions in parallel processing
+                val importedWordsSet = java.util.Collections.synchronizedSet(mutableSetOf<String>())
                 
                 // Concurrent Processing (Simple approach: Process chunks sequentially but allow parallel request logic if we had multiple queues)
                 // For now, simple loop is stable. To increase speed, we can launch parallel coroutines for chunks.

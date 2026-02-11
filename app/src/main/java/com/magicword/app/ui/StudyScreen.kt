@@ -27,6 +27,13 @@ import java.util.Locale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.ui.window.Dialog
+
 @Composable
 fun StudyScreen() {
     val context = LocalContext.current
@@ -37,9 +44,13 @@ fun StudyScreen() {
     )
     
     val dueWords by viewModel.dueWords.collectAsState(initial = emptyList())
+    val allLibraries by viewModel.allLibraries.collectAsState(initial = emptyList())
+    val studyLibraryIds by viewModel.studyLibraryIds.collectAsState()
+    
     var currentWordIndex by remember { mutableIntStateOf(0) }
     var isReviewing by remember { mutableStateOf(false) }
     var showAnswer by remember { mutableStateOf(false) }
+    var showLibrarySelector by remember { mutableStateOf(false) }
     
     // When review session starts or words update, reset
     val wordsToReview = remember(dueWords, isReviewing) {
@@ -53,12 +64,29 @@ fun StudyScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (!isReviewing) {
-            // Dashboard View
-            Spacer(modifier = Modifier.height(32.dp))
+            // Dashboard View - Redesigned
             
+            // 1. Multi-Library Selector at Top
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable { showLibrarySelector = true }
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = if (studyLibraryIds.isEmpty()) "所有词库" else "已选 ${studyLibraryIds.size} 个词库",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Libraries")
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 2. "Today's Study" prominent at top
             Card(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Column(
@@ -70,35 +98,91 @@ fun StudyScreen() {
                     Text(
                         text = "${dueWords.size}", 
                         style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
                     )
                     Text("个单词", style = MaterialTheme.typography.bodyMedium)
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Button(
+                        onClick = { 
+                            isReviewing = true 
+                            currentWordIndex = 0
+                            showAnswer = false
+                        },
+                        enabled = dueWords.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(Icons.Default.Refresh, null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("开始复习", style = MaterialTheme.typography.titleMedium)
+                    }
+                    
+                    if (dueWords.isEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("🎉 时间非常宝贵，今日任务已完成！", color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
+                    }
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Button(
-                onClick = { 
-                    isReviewing = true 
-                    currentWordIndex = 0
-                    showAnswer = false
-                },
-                enabled = dueWords.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) {
-                Icon(Icons.Default.Refresh, null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("开始复习")
-            }
-            
-            if (dueWords.isEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("🎉 太棒了！今日复习任务已完成。", color = MaterialTheme.colorScheme.secondary)
+            // Library Selection Dialog
+            if (showLibrarySelector) {
+                Dialog(onDismissRequest = { showLibrarySelector = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .heightIn(max = 400.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "选择学习词库",
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                                items(allLibraries) { library ->
+                                    val isSelected = studyLibraryIds.contains(library.id)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { viewModel.toggleStudyLibrary(library.id) }
+                                            .padding(vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = { viewModel.toggleStudyLibrary(library.id) }
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = library.name,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                    Divider()
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { showLibrarySelector = false },
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("确定")
+                            }
+                        }
+                    }
+                }
             }
             
         } else {
-            // Review Session View
+            // Review Session View (Keep existing logic)
             if (currentWord != null) {
                 // Progress Bar
                 LinearProgressIndicator(

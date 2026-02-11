@@ -44,6 +44,8 @@ import java.util.Locale
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.graphics.Color
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 @Composable
 fun WordCard(
@@ -149,12 +151,56 @@ fun WordDetailContent(word: Word) {
         Divider(color = MaterialTheme.colorScheme.surfaceVariant)
         Spacer(modifier = Modifier.height(16.dp))
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         // CN Definition
         Text(
             text = word.definitionCn,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
+        
+        // Word Forms (Variations)
+        if (!word.formsJson.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Parse JSON outside of Composable structure (or assume it's safe/pure)
+            // But Text/Column must be direct children.
+            // Move parsing logic to a variable
+            val formsMap: Map<String, String?>? = try {
+                 val type = object : TypeToken<Map<String, String?>>() {}.type
+                 Gson().fromJson(word.formsJson, type)
+            } catch (e: Exception) {
+                 null
+            }
+            
+            val formList = formsMap?.entries?.filter { !it.value.isNullOrBlank() } ?: emptyList()
+            
+            if (formList.isNotEmpty()) {
+                Text(
+                    text = "WORD FORMS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Column(modifier = Modifier.padding(top = 4.dp)) {
+                    formList.forEach { (key, value) ->
+                        Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                            Text(
+                                text = "${key.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }}: ",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = value ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // EN Definition
         if (!word.definitionEn.isNullOrBlank()) {
