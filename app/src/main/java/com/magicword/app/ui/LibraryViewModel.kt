@@ -764,8 +764,9 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             }
 
             standardizedWords.forEach { stdWord ->
+                val targetLibraryId = if (AppConfig.saveLocationId > 0) AppConfig.saveLocationId else _currentLibraryId.value
                 val wordToSave = stdWord.toEntity(
-                    libraryId = _currentLibraryId.value,
+                    libraryId = targetLibraryId,
                     example = stdWord.example,
                     memoryMethod = stdWord.memoryMethod,
                     definitionEn = stdWord.definitionEn
@@ -787,9 +788,14 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     }
 
     private suspend fun fetchWordDefinitionsFromAi(words: List<String>): List<StandardizedWord> {
+        val userPersona = AppConfig.userPersona
+        val personaInstruction = if (userPersona.isNotBlank()) {
+            "\nUSER PERSONA CONTEXT (Adapt examples/mnemonics for this user): $userPersona\n"
+        } else ""
+
         val chunkPrompt = """
             You are a strict JSON data generator. Analyze these English words: $words
-            
+            $personaInstruction
             Return a JSON Array of objects.
             
             STRICT JSON FORMAT RULES:

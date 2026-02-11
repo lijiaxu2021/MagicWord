@@ -141,7 +141,7 @@ fun InitScreen(onInitSuccess: () -> Unit) {
                                     addLog("Model: ${config.modelName}")
                                     
                                     // Save Config
-                                    AppConfig.saveConfig(config.apiKey, config.modelName, serverUrl)
+                                    AppConfig.saveConfig(config.apiKey, config.modelName, serverUrl, null, null)
                                     addLog("💾 配置已保存")
                                     
                                     // Import Library if URL exists
@@ -222,7 +222,7 @@ fun InitScreen(onInitSuccess: () -> Unit) {
                 
                 Button(
                     onClick = {
-                        AppConfig.saveConfig(manualApiKey, manualModelName, null)
+                        AppConfig.saveConfig(manualApiKey, manualModelName, null, null, null)
                         addLog("💾 手动配置已保存")
                         onInitSuccess()
                     },
