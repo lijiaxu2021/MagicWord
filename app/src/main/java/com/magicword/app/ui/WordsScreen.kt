@@ -41,6 +41,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -85,38 +87,22 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     }
 
     if (globalSearchResult != null) {
-        // Automatically navigate to the found word's card position instead of showing a dialog
-        // Find the index of the found word in the current list
-        // Note: globalSearchResult might be in a different library. 
-        // If so, we should switch library first? 
-        // Logic: findWordGlobal finds word across ALL libraries.
-        // If found, we want to jump to it.
-        
         val foundWord = globalSearchResult!!
         val foundLibId = foundWord.libraryId
         
         LaunchedEffect(foundWord) {
-            // 1. Switch Library if needed
             if (foundLibId != currentLibraryId) {
                 viewModel.switchLibrary(foundLibId)
             }
-            
-            // 2. Wait for words to update (reactively) and find index
-            // Since we can't easily "wait" here without complex logic, we rely on the list update.
-            // But we can try to find it in the *next* composition or use a side effect.
-            // Actually, if we switch library, `words` will update.
-            // We need to trigger the scroll AFTER `words` contains `foundWord`.
         }
         
-        // Use a separate effect to scroll once the word is present in the list
         LaunchedEffect(words, foundWord) {
              if (words.any { it.id == foundWord.id }) {
                  val index = words.indexOfFirst { it.id == foundWord.id }
                  if (index != -1) {
-                     // Switch to Card Mode and Scroll
                      isListMode = false
                      pagerState.scrollToPage(index)
-                     viewModel.clearGlobalSearchResult() // Clear state after navigation
+                     viewModel.clearGlobalSearchResult()
                  }
              }
         }
@@ -129,11 +115,9 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Scroll Control
     val listState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
-        // Update UI list first
         reorderableWords = reorderableWords.toMutableList().apply {
             add(to.index, removeAt(from.index))
         }
-        // Then update DB (debounce this in real app, but for now direct update)
         val updatedList = reorderableWords.mapIndexed { index, word -> word.copy(sortOrder = index) }
         viewModel.updateWords(updatedList)
     }
@@ -158,14 +142,11 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let {
             scope.launch {
-                // If selectedExportLibraries is empty, export current library only.
-                // Otherwise export all selected libraries.
                 val targetIds = if (selectedExportLibraries.isEmpty()) null else selectedExportLibraries.toList()
                 val json = viewModel.getLibraryJson(targetIds)
                 context.contentResolver.openOutputStream(it)?.use { output ->
                     output.write(json.toByteArray())
                 }
-                // Clear selection after export
                 selectedExportLibraries = emptySet()
             }
         }
@@ -185,65 +166,63 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Sync Pager State with List Scroll
     LaunchedEffect(isListMode) {
         if (isListMode) {
-            // Scroll list to current pager item
             listState.scrollToItem(pagerState.currentPage)
-        } else {
-            // Scroll pager to current list item (if user scrolled list) - Optional, usually user taps item
         }
     }
 
-    // Animation Transition
-    AnimatedContent(
-        targetState = isListMode,
-        label = "ModeSwitch"
-    ) { mode ->
-        if (mode) {
-            // LIST MODE
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("单词列表 (${words.size})") },
-                        actions = {
-                            // Bulk Import Button
-                             IconButton(onClick = { showImportSheet = true }) {
+    // MAIN LAYOUT STRUCTURE
+    // Use a single Scaffold for the entire screen
+    Scaffold(
+        topBar = {
+            Column(
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            ) {
+                // 1. Top Bar (Title + Actions)
+                CenterAlignedTopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { showLibrarySheet = true }
+                        ) {
+                            Text(
+                                text = currentLibrary?.name ?: "默认词库",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
+                        }
+                    },
+                    actions = {
+                        // Action buttons based on mode
+                        if (isListMode) {
+                            // Bulk Import
+                            IconButton(onClick = { showImportSheet = true }) {
                                 Icon(Icons.Default.Add, "Import")
                             }
                             
-    // Test Type Selection Dialog
-    var showTestTypeDialog by remember { mutableStateOf(false) }
-
-    // Test Selected Button
-    if (selectedWords.isNotEmpty()) {
-        IconButton(onClick = {
-            showTestTypeDialog = true
-        }) {
-            Icon(Icons.Default.PlayArrow, "Test Selected", tint = MaterialTheme.colorScheme.primary)
-        }
-        
-        IconButton(onClick = {
-            viewModel.deleteWords(selectedWords.toList())
-            selectedWords = emptySet()
-        }) {
-            Icon(Icons.Default.Delete, "Delete Selected", tint = MaterialTheme.colorScheme.error)
-        }
-    }
-    
-    if (showTestTypeDialog) {
-        TestTypeSelectionDialog(
-            onDismiss = { showTestTypeDialog = false },
-            onConfirm = { type ->
-                val selectedList = words.filter { selectedWords.contains(it.id) }
-                viewModel.setTestCandidates(selectedList)
-                viewModel.setTestType(type)
-                showTestTypeDialog = false
-                // Note: User needs to navigate to Test tab manually or we add callback.
-                // Assuming MainScreen observes testCandidates/Type and switches tab, OR user manually switches.
-                // For now, user manually switches, but at least the TYPE is set correctly.
-            }
-        )
-    }
-                        
-                            // Sort Button
+                            // Test/Delete Selected
+                            if (selectedWords.isNotEmpty()) {
+                                var showTestTypeDialog by remember { mutableStateOf(false) }
+                                IconButton(onClick = { showTestTypeDialog = true }) {
+                                    Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = {
+                                    viewModel.deleteWords(selectedWords.toList())
+                                    selectedWords = emptySet()
+                                }) {
+                                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                                }
+                                if (showTestTypeDialog) {
+                                    TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
+                                        val selectedList = words.filter { selectedWords.contains(it.id) }
+                                        viewModel.setTestCandidates(selectedList)
+                                        viewModel.setTestType(type)
+                                        showTestTypeDialog = false
+                                    })
+                                }
+                            }
+                            
+                            // Sort
                             Box {
                                 IconButton(onClick = { showSortMenu = true }) {
                                     Icon(Icons.Default.Sort, "Sort")
@@ -266,37 +245,69 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                             IconButton(onClick = { isListMode = false }) {
                                 Icon(Icons.Default.Close, "Close List")
                             }
+                        } else {
+                            // Card Mode Actions
+                            IconButton(onClick = { isListMode = true }) {
+                                Icon(Icons.Default.List, contentDescription = "List Mode")
+                            }
+                            IconButton(onClick = onOpenSettings) {
+                                Icon(Icons.Default.Settings, contentDescription = "Settings")
+                            }
+                        }
+                    }
+                )
+                
+                // 2. Persistent Search Bar (Always Visible under Title)
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { query -> 
+                        searchQuery = query
+                        // Auto-scroll logic if in List Mode
+                        if (isListMode && query.isNotEmpty()) {
+                             val index = words.indexOfFirst { it.word.contains(query, ignoreCase = true) }
+                             if (index != -1) {
+                                 scope.launch { listState.animateScrollToItem(index) }
+                             }
+                        }
+                    },
+                    placeholder = { Text("全局搜索 / AI 录入 (Enter)") },
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
+                    singleLine = true,
+                    shape = RoundedCornerShape(50), // Rounded style
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            viewModel.handleGlobalSearch(searchQuery)
                         }
                     )
-                }
-            ) { padding ->
-                Column(modifier = Modifier.padding(padding)) {
-                    // Search Bar within List Mode
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { query -> 
-                            searchQuery = query
-                            // Auto-scroll to first match
-                            val index = words.indexOfFirst { it.word.contains(query, ignoreCase = true) }
-                            if (index != -1) {
-                                scope.launch { listState.animateScrollToItem(index) }
-                            }
-                        },
-                        placeholder = { Text("搜索 / AI 录入 (Enter)") },
-                        leadingIcon = { Icon(Icons.Default.Search, null) },
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(
-                            onSearch = {
-                                viewModel.handleGlobalSearch(searchQuery)
-                            }
-                        )
-                    )
-
+                )
+            }
+        }
+    ) { padding ->
+        // CONTENT AREA
+        AnimatedContent(
+            targetState = isListMode,
+            label = "ModeSwitch",
+            modifier = Modifier.padding(padding)
+        ) { mode ->
+            if (mode) {
+                // LIST MODE CONTENT
+                if (words.isEmpty()) {
+                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                         Text("当前词库为空")
+                     }
+                } else {
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         itemsIndexed(reorderableWords, key = { _, word -> word.id }) { index, word ->
                             ReorderableItem(reorderableState, key = word.id) { isDragging ->
@@ -326,19 +337,15 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                                             }
                                         },
                                         modifier = Modifier
-                                            .clickable { 
-                                                // Double tap logic handled below
-                                            }
+                                            .clickable { }
                                             .pointerInput(Unit) {
                                                 detectTapGestures(
                                                     onDoubleTap = {
                                                         scope.launch {
-                                                            // Save state first
                                                             prefs.edit().putInt("last_index_${currentLibraryId}", index).apply()
                                                             if (currentLibrary != null) {
                                                                 viewModel.updateLibraryLastIndex(currentLibrary.id, index)
                                                             }
-                                                            // Switch and Scroll
                                                             pagerState.scrollToPage(index)
                                                             isListMode = false
                                                         }
@@ -355,75 +362,31 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                         }
                     }
                 }
-            }
-        } else {
-            // CARD MODE
-            // Restore Pager State from Prefs/DB
-            // We use LaunchedEffect to scroll once. 
-            // IMPROVEMENT: Fetch initial index from ViewModel (DB) synchronously if possible or wait.
-            // Current approach uses prefs which is fast.
-            // Also need to check if user switched library.
-            
-            // Key change: Only scroll if it's the first composition for this library to avoid reset.
-            // But how to track "first"? LaunchedEffect(currentLibraryId) is good.
-            
-            LaunchedEffect(currentLibraryId, words) { // Add currentLibraryId dependency
-                if (words.isNotEmpty()) {
-                    // Use ViewModel to get the source-of-truth index (DB -> Prefs)
-                    // Since getInitialLastIndex is suspend, we call it here.
-                    val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
-                    if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
-                        pagerState.scrollToPage(lastIndex)
+            } else {
+                // CARD MODE CONTENT
+                LaunchedEffect(currentLibraryId, words) {
+                    if (words.isNotEmpty()) {
+                        val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
+                        if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
+                            pagerState.scrollToPage(lastIndex)
+                        }
                     }
                 }
-            }
-            
-            // Save Pager State
-            LaunchedEffect(pagerState.currentPage) {
-                // Save to both Prefs (fast) and DB (reliable)
-                viewModel.updateLibraryLastIndex(currentLibraryId, pagerState.currentPage)
-            }
-            
-            Scaffold(
-                topBar = {
-                    CenterAlignedTopAppBar(
-                        title = {
-                            // Title with integrated switch button
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.clickable { showLibrarySheet = true }
-                            ) {
-                                Text(
-                                    text = currentLibrary?.name ?: "默认词库",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { showSearch = true }) {
-                                Icon(Icons.Default.Search, contentDescription = "Search")
-                            }
-                            IconButton(onClick = onOpenSettings) {
-                                Icon(Icons.Default.Settings, contentDescription = "Settings")
-                            }
-                        }
-                    )
+                
+                LaunchedEffect(pagerState.currentPage) {
+                    viewModel.updateLibraryLastIndex(currentLibraryId, pagerState.currentPage)
                 }
-            ) { padding ->
+                
                 if (words.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("当前词库为空，请添加单词")
                     }
                 } else {
                     VerticalPager(
                         state = pagerState,
-                        modifier = Modifier.fillMaxSize().padding(padding)
+                        modifier = Modifier.fillMaxSize()
                     ) { page ->
                         val word = words[page]
-                        
-                        // Increment Review Count on View
                         LaunchedEffect(page) {
                              if (pagerState.currentPage == page) {
                                  viewModel.incrementReviewCount(word)
@@ -436,7 +399,6 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            // Detect Long Press on the Card itself to switch
                             Box(modifier = Modifier
                                 .fillMaxSize()
                                 .pointerInput(Unit) {
@@ -447,7 +409,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                             ) {
                                 WordCard(
                                     word = word,
-                                    onEditClick = { editingWord = word } // Pencil button now opens edit dialog directly
+                                    onEditClick = { editingWord = word }
                                 )
                             }
                         }
