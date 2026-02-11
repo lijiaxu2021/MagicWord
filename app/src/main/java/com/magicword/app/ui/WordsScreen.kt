@@ -47,7 +47,7 @@ import androidx.compose.ui.draw.scale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun WordsScreen(onOpenSettings: () -> Unit) {
+fun WordsScreen(onOpenSettings: () -> Unit, onJumpToTest: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     val database = AppDatabase.getDatabase(context)
@@ -95,6 +95,16 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
 
     // State to track if we just navigated from search to prevent auto-restore
     var isNavigatingFromSearch by remember { mutableStateOf(false) }
+    
+    // Jump Navigation Logic
+    var pendingJumpWordId by remember { mutableStateOf<Int?>(null) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.jumpToWordEvent.collect { (_, wordId) ->
+            pendingJumpWordId = wordId
+            isNavigatingFromSearch = true // Prevent auto-restore logic interfering
+        }
+    }
 
     if (globalSearchResult != null) {
         val foundWord = globalSearchResult!!
@@ -184,122 +194,64 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         }
     }
 
-    // Drawer State
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    var showChineseInDrawer by remember { mutableStateOf(false) }
+    // Drawer State (Removed per user request)
+    // val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     // MAIN LAYOUT STRUCTURE
-    // Use ModalNavigationDrawer wrapping Scaffold
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = false, // Disable swipe to open
-        drawerContent = {
-            ModalDrawerSheet(
-                modifier = Modifier.width(200.dp) // Slimmer drawer
+    // Replaced Drawer with direct Scaffold
+    Scaffold(
+        topBar = {
+            Column(
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("快速导航", style = MaterialTheme.typography.titleMedium)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (showChineseInDrawer) "中" else "En", style = MaterialTheme.typography.bodySmall)
-                            Switch(
-                                checked = showChineseInDrawer,
-                                onCheckedChange = { showChineseInDrawer = it },
-                                modifier = Modifier.scale(0.7f)
+                // 1. Top Bar (Title + Actions)
+                CenterAlignedTopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { showLibrarySheet = true }
+                        ) {
+                            Text(
+                                text = currentLibrary?.name ?: "默认词库",
+                                style = MaterialTheme.typography.titleMedium
                             )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
                         }
-                    }
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                    
-                    if (words.isEmpty()) {
-                        Text("暂无单词", style = MaterialTheme.typography.bodySmall)
-                    } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            itemsIndexed(words) { index, word ->
-                                Text(
-                                    text = if (showChineseInDrawer) word.definitionCn else word.word,
-                                    maxLines = 1,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            scope.launch {
-                                                drawerState.close()
-                                                // Navigate
-                                                isListMode = false
-                                                pagerState.scrollToPage(index)
-                                                // Ensure restoration doesn't override
-                                                isNavigatingFromSearch = true 
-                                                // (We reuse the search navigation flag or just rely on manual scroll)
-                                                // Actually manually scrolling pagerState usually updates the state and persists.
-                                                // But let's set flag to be safe if a recomposition happens.
-                                            }
-                                        }
-                                        .padding(vertical = 12.dp)
-                                )
-                                Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                Column(
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                ) {
-                    // 1. Top Bar (Title + Actions)
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.clickable { showLibrarySheet = true }
-                            ) {
-                                Text(
-                                    text = currentLibrary?.name ?: "默认词库",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
-                            }
-                        },
-                        navigationIcon = {
-                            if (isListMode && selectedWords.isNotEmpty()) {
-                                Row {
-                                    // Move Test and Delete to left
-                                    var showTestTypeDialog by remember { mutableStateOf(false) }
-                                    IconButton(onClick = { showTestTypeDialog = true }) {
-                                        Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
-                                    }
-                                    IconButton(onClick = {
-                                        viewModel.deleteWords(selectedWords.toList())
-                                        selectedWords = emptySet()
-                                    }) {
-                                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
-                                    }
-                                    
-                                    if (showTestTypeDialog) {
-                                        TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
-                                            val selectedList = words.filter { selectedWords.contains(it.id) }
-                                            viewModel.setTestCandidates(selectedList)
-                                            viewModel.setTestType(type)
-                                            showTestTypeDialog = false
-                                        })
-                                    }
+                    },
+                    navigationIcon = {
+                        if (isListMode && selectedWords.isNotEmpty()) {
+                            Row {
+                                // Move Test and Delete to left
+                                var showTestTypeDialog by remember { mutableStateOf(false) }
+                                IconButton(onClick = { showTestTypeDialog = true }) {
+                                    Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
                                 }
-                            } else {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Quick Nav")
+                                IconButton(onClick = {
+                                    viewModel.deleteWords(selectedWords.toList())
+                                    selectedWords = emptySet()
+                                }) {
+                                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                                }
+                                
+                                if (showTestTypeDialog) {
+                                    TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
+                                        val selectedList = words.filter { selectedWords.contains(it.id) }
+                                        viewModel.setTestCandidates(selectedList)
+                                        viewModel.setTestType(type)
+                                        showTestTypeDialog = false
+                                        onJumpToTest() // Navigate to Test Screen
+                                    })
                                 }
                             }
-                        },
-                        actions = {
+                        } else {
+                            // Quick Nav Button replaced by nothing or maybe settings shortcut?
+                            // User said: "Pull down from top... or drawer from bottom". 
+                            // We implemented "Click Title -> BottomSheet" for library switch.
+                            // Left side can be empty or something else.
+                        }
+                    },
+                    actions = {
                         // Action buttons based on mode
                         if (isListMode) {
                             // Test/Delete Selected - Moved to Left (navigationIcon)
@@ -459,7 +411,13 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 // CARD MODE CONTENT
     LaunchedEffect(currentLibraryId, words) {
         if (words.isNotEmpty()) {
-            if (!isNavigatingFromSearch) {
+            if (pendingJumpWordId != null) {
+                 val index = words.indexOfFirst { it.id == pendingJumpWordId }
+                 if (index != -1) {
+                     pagerState.scrollToPage(index)
+                     pendingJumpWordId = null
+                 }
+            } else if (!isNavigatingFromSearch) {
                 // Check if we have a saved index
                 val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
                 if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
@@ -518,7 +476,6 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 }
             }
         }
-    }
     }
 
     // Handle Global Search Trigger

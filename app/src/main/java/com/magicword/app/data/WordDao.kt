@@ -82,4 +82,17 @@ interface WordDao {
 
     @Query("SELECT * FROM words WHERE word = :text COLLATE NOCASE LIMIT 1")
     suspend fun findWordGlobal(text: String): Word?
+
+    // Word Lists
+    @Query("SELECT * FROM word_lists ORDER BY createdAt DESC")
+    fun getAllWordLists(): Flow<List<WordList>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWordList(wordList: WordList): Long
+
+    @androidx.room.Delete
+    suspend fun deleteWordList(wordList: WordList)
+    
+    @Update
+    suspend fun updateWordList(wordList: WordList)
 }

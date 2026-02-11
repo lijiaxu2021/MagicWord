@@ -48,8 +48,9 @@ import kotlinx.coroutines.awaitAll
 
 import com.magicword.app.utils.AppConfig
 
-import android.speech.tts.TextToSpeech
-import java.util.Locale
+import com.magicword.app.data.WordList
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     
@@ -67,6 +68,8 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         LogUtil.logError("TTS", "Language Missing/Not Supported", null)
                         _isTtsReady.value = false
                     } else {
+                        // Optimization: Slow down slightly for clarity
+                        tts?.setSpeechRate(0.9f)
                         _isTtsReady.value = true
                     }
                 } else {
@@ -882,6 +885,58 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         // Validation logic removed to simplify flow and avoid recursion issues.
         // User requested to trust the first pass.
         _importLogs.value = _importLogs.value + "✅ 跳过 AI 复检 (用户配置)"
+    }
+
+    // --- Word List Feature ---
+    val allWordLists: Flow<List<WordList>> = wordDao.getAllWordLists()
+
+    private val _currentWordListId = MutableStateFlow(prefs.getInt("current_word_list_id", -1))
+    val currentWordListId: StateFlow<Int> = _currentWordListId.asStateFlow()
+
+    fun setCurrentWordListId(id: Int) {
+        _currentWordListId.value = id
+        prefs.edit().putInt("current_word_list_id", id).apply()
+    }
+
+    fun createWordList(name: String, libraryIds: List<Int>) {
+        viewModelScope.launch {
+            val json = Gson().toJson(libraryIds)
+            val newList = WordList(name = name, libraryIdsJson = json)
+            val newId = wordDao.insertWordList(newList)
+            if (_currentWordListId.value == -1) {
+                setCurrentWordListId(newId.toInt())
+            }
+        }
+    }
+
+    fun deleteWordList(wordList: WordList) {
+        viewModelScope.launch {
+            wordDao.deleteWordList(wordList)
+            if (_currentWordListId.value == wordList.id) {
+                setCurrentWordListId(-1)
+            }
+        }
+    }
+
+    // --- Jump Navigation ---
+    // Event: Pair<LibraryId, WordId>
+    private val _jumpToWordEvent = MutableSharedFlow<Pair<Int, Int>>(replay = 0)
+    val jumpToWordEvent: SharedFlow<Pair<Int, Int>> = _jumpToWordEvent
+
+    fun jumpToWord(libraryId: Int, wordId: Int) {
+        viewModelScope.launch {
+            // 1. Switch Library
+            switchLibrary(libraryId)
+            
+            // 2. Find index of word in that library (sorted by current sort option?)
+            // This is tricky because WordsScreen sort might differ. 
+            // We assume WordsScreen observes `allWords`.
+            // We can't easily calculate index here without knowing exact sort.
+            // But we can pass the ID and let UI handle it, or we try to find it.
+            // Let's pass the ID and let UI find the index in its list.
+            
+            _jumpToWordEvent.emit(libraryId to wordId)
+        }
     }
 }
 

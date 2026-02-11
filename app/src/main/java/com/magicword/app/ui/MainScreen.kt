@@ -88,13 +88,14 @@ fun MainScreen() {
     //     return
     // }
 
-    val pagerState = rememberPagerState(pageCount = { 3 }) // Updated count
+    val pagerState = rememberPagerState(pageCount = { 4 }) // Updated count
     val scope = rememberCoroutineScope()
     
     // Navigation items
     val items = listOf(
-        Screen.Study, // New Home Tab
+        Screen.Study,
         Screen.Words,
+        Screen.WordList, // New Tab
         Screen.Test
     )
 
@@ -161,8 +162,14 @@ fun MainScreen() {
                 SlideInEntry {
                     when (page) {
                         0 -> StudyScreen() // New Screen
-                        1 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
-                        2 -> TestScreen()
+                        1 -> WordsScreen(
+                            onOpenSettings = { currentOverlay = "settings" },
+                            onJumpToTest = {
+                                scope.launch { pagerState.animateScrollToPage(3) }
+                            }
+                        )
+                        2 -> WordListScreen(viewModel)
+                        3 -> TestScreen()
                     }
                 }
             }
@@ -173,5 +180,6 @@ fun MainScreen() {
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Study : Screen("study", "学习", Icons.Default.School) // New Screen
     object Words : Screen("words", "词库", Icons.Default.Book)
+    object WordList : Screen("list", "单词表", Icons.Default.List) // New Tab
     object Test : Screen("test", "测试", Icons.Default.CheckCircle)
 }
