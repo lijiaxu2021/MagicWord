@@ -186,9 +186,10 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Use ModalNavigationDrawer wrapping Scaffold
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = false, // Disable swipe to open
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(260.dp) // Narrow drawer
+                modifier = Modifier.width(200.dp) // Slimmer drawer
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(

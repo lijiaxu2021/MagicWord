@@ -325,10 +325,10 @@ fun StudyScreen() {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        ReviewButton("忘记", Color(0xFFE57373)) { processResult(viewModel, currentWord, 0, { currentWordIndex++ }, { /* No-op on finish here, loop handles it? */ }) }
-                        ReviewButton("困难", Color(0xFFFFB74D)) { processResult(viewModel, currentWord, 3, { currentWordIndex++ }, { }) }
-                        ReviewButton("良好", Color(0xFF81C784)) { processResult(viewModel, currentWord, 4, { currentWordIndex++ }, { }) }
-                        ReviewButton("简单", Color(0xFF64B5F6)) { processResult(viewModel, currentWord, 5, { currentWordIndex++ }, { }) }
+                        ReviewButton("忘记", Color(0xFFE57373)) { processResult(viewModel, currentWord, 0, { currentWordIndex++ }, { showAnswer = false }) }
+                        ReviewButton("困难", Color(0xFFFFB74D)) { processResult(viewModel, currentWord, 3, { currentWordIndex++ }, { showAnswer = false }) }
+                        ReviewButton("良好", Color(0xFF81C784)) { processResult(viewModel, currentWord, 4, { currentWordIndex++ }, { showAnswer = false }) }
+                        ReviewButton("简单", Color(0xFF64B5F6)) { processResult(viewModel, currentWord, 5, { currentWordIndex++ }, { showAnswer = false }) }
                     }
                 } else {
                     Button(
@@ -446,9 +446,10 @@ fun processResult(
     word: Word, 
     quality: Int, 
     onNext: () -> Unit,
-    onFinish: () -> Unit
+    resetCardState: () -> Unit
 ) {
     viewModel.processReview(word, quality)
     // Delay slightly? No need for instant update
     onNext()
+    resetCardState()
 }
