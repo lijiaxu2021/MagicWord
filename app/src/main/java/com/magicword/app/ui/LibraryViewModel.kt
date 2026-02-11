@@ -237,8 +237,10 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             STRICT JSON FORMAT RULES:
             1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run".
             2. "phonetic": String.
-            3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
-               - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
+            3. "senses": Object (Key-Value pairs). Keys like "sense_1", "sense_2", etc.
+               - Include as many senses as necessary to cover COMMON meanings.
+               - DO NOT force 10 senses. If a word only has 2 meanings, only return "sense_1" and "sense_2".
+               - Value Object: { "pos": "...", "meaning": "..." }.
                - "pos": String (e.g., "n", "v", "adj").
                - "meaning": String (Chinese definition).
             4. "definition_en": String (Brief English definition).
@@ -801,8 +803,10 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             STRICT JSON FORMAT RULES:
             1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run".
             2. "phonetic": String.
-            3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
-               - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
+            3. "senses": Object (Key-Value pairs). Keys like "sense_1", "sense_2", etc.
+               - Include as many senses as necessary to cover COMMON meanings.
+               - DO NOT force 10 senses. If a word only has 2 meanings, only return "sense_1" and "sense_2".
+               - Value Object: { "pos": "...", "meaning": "..." }.
                - "pos": String (e.g., "n", "v", "adj").
                - "meaning": String (Chinese definition).
             4. "definition_en": String (Brief English definition).
@@ -837,103 +841,11 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         }
     }
 
-    // Step D: Validation Logic
+    // Step D: Validation Logic (Removed per user request)
     private suspend fun validateAndFixImportedWords(words: List<String>) {
-        val batchSize = 30
-        val batches = words.chunked(batchSize)
-        
-        batches.forEachIndexed { index, batch ->
-            _importLogs.value = _importLogs.value + "🔍 检查批次 ${index + 1}/${batches.size}..."
-            
-            val dbWords = mutableListOf<Word>()
-            batch.forEach { wordText ->
-                val w = wordDao.getWordByText(wordText, _currentLibraryId.value)
-                if (w != null) dbWords.add(w)
-            }
-            
-            if (dbWords.isEmpty()) return@forEachIndexed
-
-            val checkData = dbWords.map { 
-                mapOf(
-                    "id" to it.id,
-                    "word" to it.word,
-                    "definition" to it.definitionCn
-                )
-            }
-            
-            val checkPrompt = """
-                Analyze the following list of imported words. 
-                Identify entries that look incorrect, hallucinated, repetitive (e.g., "n. poem; n. poem; n. poem"), or garbage.
-                
-                Input Data: ${Gson().toJson(checkData)}
-                
-                Task:
-                1. Find the BAD entries.
-                2. Return a JSON Array of STRINGS (the 'word' field only) for the bad entries.
-                3. If all are good, return empty array [].
-                
-                Example Return: ["badword1", "badword2"]
-            """.trimIndent()
-            
-            val request = AiRequest(
-                model = AppConfig.modelName,
-                messages = listOf(Message("user", checkPrompt)),
-                temperature = 0.1
-            )
-            
-            try {
-                val response = RetrofitClient.api.chat(request)
-                val content = response.choices.first().message.content
-                
-                val jsonStart = content.indexOf('[')
-                val jsonEnd = content.lastIndexOf(']') + 1
-                
-                if (jsonStart != -1 && jsonEnd > jsonStart) {
-                    val jsonStr = content.substring(jsonStart, jsonEnd)
-                    val badWords: List<String> = Gson().fromJson(jsonStr, object : TypeToken<List<String>>() {}.type)
-                    
-                    if (badWords.isNotEmpty()) {
-                        _importLogs.value = _importLogs.value + "⚠️ 发现 ${badWords.size} 个异常单词，正在重新生成..."
-                        
-                        // Re-generate full data for bad words using the standard logic
-                        try {
-                            val fixedWords = fetchWordDefinitionsFromAi(badWords)
-                            
-                            fixedWords.forEach { stdWord ->
-                                // Find original ID to update
-                                val original = dbWords.find { it.word.equals(stdWord.word, ignoreCase = true) }
-                                
-                                if (original != null) {
-                                    val fixedEntity = stdWord.toEntity(
-                                        libraryId = original.libraryId,
-                                        example = stdWord.example,
-                                        memoryMethod = stdWord.memoryMethod,
-                                        definitionEn = stdWord.definitionEn
-                                    ).copy(
-                                        id = original.id, // Preserve ID
-                                        createdAt = original.createdAt,
-                                        reviewCount = original.reviewCount,
-                                        lastReviewTime = original.lastReviewTime,
-                                        nextReviewTime = original.nextReviewTime,
-                                        easinessFactor = original.easinessFactor,
-                                        interval = original.interval,
-                                        repetitions = original.repetitions
-                                    )
-                                    wordDao.updateWord(fixedEntity)
-                                    _importLogs.value = _importLogs.value + "🛠️ 已修复: ${stdWord.word}"
-                                }
-                            }
-                        } catch (e: Exception) {
-                            LogUtil.logError("SanityCheckFix", "Failed", e)
-                            _importLogs.value = _importLogs.value + "❌ 修复失败: ${e.message}"
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                LogUtil.logError("SanityCheck", "BatchFailed", e)
-                _importLogs.value = _importLogs.value + "⚠️ 检查批次失败: ${e.message}"
-            }
-        }
+        // Validation logic removed to simplify flow and avoid recursion issues.
+        // User requested to trust the first pass.
+        _importLogs.value = _importLogs.value + "✅ 跳过 AI 复检 (用户配置)"
     }
 }
 

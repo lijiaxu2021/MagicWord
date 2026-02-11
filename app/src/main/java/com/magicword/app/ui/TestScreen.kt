@@ -66,6 +66,9 @@ import java.util.Locale
 
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.clickable
@@ -376,20 +379,45 @@ fun QuizChoiceMode(
     onBack: () -> Unit,
     onFinish: (QuizState, List<TestResultItem>) -> Unit
 ) {
-    // ... (keep check for < 4 words) ...
-    if (words.size < 4) {
+    // Filter words reviewed in the last 24h
+    val now = System.currentTimeMillis()
+    val availableWords = remember(words) {
+        words.filter { 
+            // Include if reviewCount is 0 OR last review was > 24h ago
+            it.reviewCount == 0 || (now - it.lastReviewTime) > 24 * 60 * 60 * 1000 
+        }
+    }
+    
+    // If all words are filtered out (all reviewed today), allow reset or show message
+    val finalWords = if (availableWords.isEmpty() && words.isNotEmpty()) {
+        // Option: Reset/Allow reviewing anyway? Let's just use all words if list is empty to avoid blocking.
+        // Or show a "You're done for today" message. User said: "All done can restart".
+        // Let's default to all words if filter result is empty, implies "Restart".
+        words 
+    } else {
+        availableWords
+    }
+
+    if (finalWords.size < 4) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("词库单词不足4个，无法开始选择题测试！")
+            Text("可用单词不足4个 (需复习或新词)，无法开始测试！")
             Button(onClick = onBack, modifier = Modifier.padding(top = 16.dp)) { Text("返回") }
         }
         return
     }
 
     // Initialize shuffled order if empty or size mismatch (re-init)
-    if (state.shuffledIndices.isEmpty() || state.shuffledIndices.size != words.size) {
-        LaunchedEffect(words) {
-            if (words.isNotEmpty()) {
-                onStateChange(state.copy(shuffledIndices = words.indices.toList().shuffled()))
+    // Note: state.shuffledIndices stores INDICES of `finalWords`, not global IDs.
+    // If `finalWords` changes size, we must reset.
+    if (state.shuffledIndices.isEmpty() || state.shuffledIndices.maxOrNull() ?: 0 >= finalWords.size) {
+        LaunchedEffect(finalWords) {
+            if (finalWords.isNotEmpty()) {
+                onStateChange(state.copy(
+                    shuffledIndices = finalWords.indices.toList().shuffled(),
+                    currentIndex = 0,
+                    score = 0,
+                    isFinished = false
+                ))
             }
         }
     }
@@ -414,11 +442,11 @@ fun QuizChoiceMode(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("测试结束！", style = MaterialTheme.typography.headlineLarge)
-            Text("得分: ${state.score} / ${words.size}", style = MaterialTheme.typography.headlineMedium)
+            Text("得分: ${state.score} / ${finalWords.size}", style = MaterialTheme.typography.headlineMedium)
             Button(
                 onClick = { 
                     results.clear()
-                    onStateChange(QuizState(shuffledIndices = words.indices.toList().shuffled()))
+                    onStateChange(QuizState(shuffledIndices = finalWords.indices.toList().shuffled()))
                 }, 
                 modifier = Modifier.padding(top = 32.dp)
             ) {
@@ -427,12 +455,18 @@ fun QuizChoiceMode(
         }
     } else {
         val currentWordIndex = state.shuffledIndices.getOrNull(state.currentIndex) ?: 0
-        val currentWord = words.getOrNull(currentWordIndex) ?: return
+        val currentWord = finalWords.getOrNull(currentWordIndex) ?: return
 
         // Generate options (stable for current word)
         val options = remember(currentWord) {
-            val wrongOptions = words.filter { it.id != currentWord.id }.shuffled().take(3)
-            (wrongOptions + currentWord).shuffled()
+            val wrongOptions = finalWords.filter { it.id != currentWord.id }.shuffled().take(3)
+            // If not enough wrong options in filtered list, grab from global 'words'
+            val safeWrongOptions = if (wrongOptions.size < 3) {
+                 val moreWrong = words.filter { it.id != currentWord.id && !wrongOptions.contains(it) }.shuffled().take(3 - wrongOptions.size)
+                 wrongOptions + moreWrong
+            } else wrongOptions
+            
+            (safeWrongOptions + currentWord).shuffled()
         }
         
         // Immediate Feedback State
@@ -440,10 +474,22 @@ fun QuizChoiceMode(
         var isAnswered by remember { mutableStateOf(false) }
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            // ... (keep header) ...
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Spacer(modifier = Modifier.weight(1f))
-                Text("进度: ${state.currentIndex + 1}/${words.size}")
+            // Header with Finish Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("进度: ${state.currentIndex + 1}/${finalWords.size}")
+                
+                // Always allow early finish if at least one question done
+                if (state.currentIndex > 0) {
+                    TextButton(onClick = {
+                        onStateChange(state.copy(isFinished = true))
+                    }) {
+                        Text("结束测试")
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -505,8 +551,14 @@ fun QuizChoiceMode(
                         colors = buttonColors,
                         enabled = !isAnswered // Disable clicks after answering
                     ) {
+                        // Fix layout for long Chinese definitions
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(option.definitionCn, modifier = Modifier.weight(1f).padding(8.dp))
+                            Text(
+                                text = option.definitionCn, 
+                                modifier = Modifier.weight(1f).padding(8.dp),
+                                maxLines = 2, // Limit lines to prevent too tall buttons
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                             if (isAnswered) {
                                 if (isCorrect) {
                                     Icon(Icons.Filled.Check, "Correct", tint = Color.White)
@@ -523,11 +575,11 @@ fun QuizChoiceMode(
             LaunchedEffect(isAnswered) {
                 if (isAnswered) {
                     val isCorrect = selectedOptionId == currentWord.id
-                    delay(2000) 
+                    delay(1000) // Reduced delay for faster flow
                     
                     val newScore = if (isCorrect) state.score + 1 else state.score
                     
-                    if (state.currentIndex < words.size - 1) {
+                    if (state.currentIndex < finalWords.size - 1) {
                         onStateChange(state.copy(
                             score = newScore,
                             currentIndex = state.currentIndex + 1
@@ -625,7 +677,23 @@ fun QuizSpellMode(words: List<Word>, onBack: () -> Unit) {
                 onValueChange = { input = it },
                 label = { Text("输入单词") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (input.isNotBlank()) {
+                            if (input.trim().equals(currentWord.word, ignoreCase = true)) {
+                                score++
+                            }
+                            input = ""
+                            if (currentIndex < words.size - 1) {
+                                currentIndex++
+                            } else {
+                                isFinished = true
+                            }
+                        }
+                    }
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
