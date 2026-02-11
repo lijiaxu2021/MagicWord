@@ -86,11 +86,16 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         }
     }
 
+    // State to track if we just navigated from search to prevent auto-restore
+    var isNavigatingFromSearch by remember { mutableStateOf(false) }
+
     if (globalSearchResult != null) {
         val foundWord = globalSearchResult!!
         val foundLibId = foundWord.libraryId
         
+        // Signal navigation
         LaunchedEffect(foundWord) {
+            isNavigatingFromSearch = true
             if (foundLibId != currentLibraryId) {
                 viewModel.switchLibrary(foundLibId)
             }
@@ -103,6 +108,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                      isListMode = false
                      pagerState.scrollToPage(index)
                      viewModel.clearGlobalSearchResult()
+                     // Keep isNavigatingFromSearch true until next composition/effect
                  }
              }
         }
@@ -366,9 +372,15 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 // CARD MODE CONTENT
                 LaunchedEffect(currentLibraryId, words) {
                     if (words.isNotEmpty()) {
-                        val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
-                        if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
-                            pagerState.scrollToPage(lastIndex)
+                        if (!isNavigatingFromSearch) {
+                            val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
+                            if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
+                                pagerState.scrollToPage(lastIndex)
+                            }
+                        } else {
+                            // If this triggered because of search navigation (e.g. library switch), we skip restore.
+                            // Reset flag for future normal library switches.
+                            isNavigatingFromSearch = false
                         }
                     }
                 }
