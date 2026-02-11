@@ -264,34 +264,39 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                             }
                         },
                         navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Quick Nav")
+                            if (isListMode && selectedWords.isNotEmpty()) {
+                                Row {
+                                    // Move Test and Delete to left
+                                    var showTestTypeDialog by remember { mutableStateOf(false) }
+                                    IconButton(onClick = { showTestTypeDialog = true }) {
+                                        Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    IconButton(onClick = {
+                                        viewModel.deleteWords(selectedWords.toList())
+                                        selectedWords = emptySet()
+                                    }) {
+                                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                                    }
+                                    
+                                    if (showTestTypeDialog) {
+                                        TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
+                                            val selectedList = words.filter { selectedWords.contains(it.id) }
+                                            viewModel.setTestCandidates(selectedList)
+                                            viewModel.setTestType(type)
+                                            showTestTypeDialog = false
+                                        })
+                                    }
+                                }
+                            } else {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(Icons.Default.Menu, contentDescription = "Quick Nav")
+                                }
                             }
                         },
                         actions = {
                         // Action buttons based on mode
                         if (isListMode) {
-                            // Test/Delete Selected
-                            if (selectedWords.isNotEmpty()) {
-                                var showTestTypeDialog by remember { mutableStateOf(false) }
-                                IconButton(onClick = { showTestTypeDialog = true }) {
-                                    Icon(Icons.Default.PlayArrow, "Test", tint = MaterialTheme.colorScheme.primary)
-                                }
-                                IconButton(onClick = {
-                                    viewModel.deleteWords(selectedWords.toList())
-                                    selectedWords = emptySet()
-                                }) {
-                                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
-                                }
-                                if (showTestTypeDialog) {
-                                    TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
-                                        val selectedList = words.filter { selectedWords.contains(it.id) }
-                                        viewModel.setTestCandidates(selectedList)
-                                        viewModel.setTestType(type)
-                                        showTestTypeDialog = false
-                                    })
-                                }
-                            }
+                            // Test/Delete Selected - Moved to Left (navigationIcon)
                             
                             // Sort
                             Box {
