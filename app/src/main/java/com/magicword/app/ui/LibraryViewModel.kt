@@ -34,6 +34,8 @@ import android.content.SharedPreferences
 import com.magicword.app.data.TestHistory
 import com.magicword.app.data.TestSession
 import java.util.ArrayDeque
+import com.magicword.app.data.StandardizedWord
+import com.magicword.app.data.toEntity
 import com.magicword.app.data.LibraryExportData
 import com.magicword.app.data.ExportPackage
 
@@ -440,10 +442,29 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         STRICT JSON FORMAT RULES:
                         1. "word": String.
                         2. "phonetic": String.
-                        3. "definition_cn": String (NOT List). Format: "pos. meaning".
-                        4. "definition_en": String.
-                        5. "example": String (NOT List). Format: "En sentence. Cn translation.\nEn sentence 2. Cn translation."
-                        6. "memory_method": String (NOT List). Escape double quotes inside strings with backslash.
+                        3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
+                           - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
+                           - "pos": String (e.g., "n", "v", "adj").
+                           - "meaning": String (Chinese definition).
+                        4. "definition_en": String (Brief English definition).
+                        5. "example": String. Format: "En sentence. Cn translation."
+                        6. "memory_method": String. Escape double quotes inside strings with backslash.
+                        
+                        Example Item:
+                        {
+                          "word": "example",
+                          "phonetic": "/ɪgˈzæmpəl/",
+                          "senses": {
+                            "sense_1": { "pos": "n", "meaning": "例子" },
+                            "sense_2": { "pos": "v", "meaning": "作为...的榜样" },
+                            "sense_3": null, "sense_4": null, "sense_5": null,
+                            "sense_6": null, "sense_7": null, "sense_8": null,
+                            "sense_9": null, "sense_10": null
+                          },
+                          "definition_en": "A representative form or pattern.",
+                          "example": "This is an example. 这是一个例子。",
+                          "memory_method": "ex(出)+ample(拿) -> 拿出来展示 -> 例子"
+                        }
                         
                         IMPORTANT: Ensure valid JSON syntax. No trailing commas.
                         NO MARKDOWN. NO COMMENTS. ONLY JSON.
@@ -464,18 +485,50 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
                         if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
                             val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
-                            val wordDetails: List<Word> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<Word>>() {}.type)
+                            
+                            // Use StandardizedWord for strict parsing
+                            // We define a wrapper class for the list parsing or just use TypeToken
+                            // But StandardizedWord is the item type.
+                            val standardizedWords: List<StandardizedWord> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
                             
                             // Check if AI returned fewer words than requested
-                            if (wordDetails.size < chunk.size) {
-                                _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${wordDetails.size}/${chunk.size})，正在检查漏词..."
+                            if (standardizedWords.size < chunk.size) {
+                                _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${standardizedWords.size}/${chunk.size})，正在检查漏词..."
                             }
 
-                            wordDetails.forEach { detail ->
-                                val wordToSave = detail.copy(libraryId = _currentLibraryId.value)
+                            standardizedWords.forEach { stdWord ->
+                                // Convert back to Entity using helper extension
+                                // We need to access extra fields from JSON map if they were separate, 
+                                // but StandardizedWord data class should match JSON keys.
+                                // Wait, StandardizedWord definition above has 'definition_en', 'example', 'memory_method' fields?
+                                // Ah, I need to add them to StandardizedWord data class first!
+                                // The previous file write didn't include them in the data class body, let me check.
+                                // Yes, the user requirement didn't explicitly say those fields, but my prompt asked for them.
+                                // I should update StandardizedWord to include them for full mapping.
+                                // Assuming I update StandardizedWord... wait, let me check the file content I wrote.
+                                // I wrote StandardizedWord with word, phonetic, senses. 
+                                // I need to update it to include definition_en, example, memory_method to capture them from JSON.
+                                
+                                // Let's pause this SearchReplace and update StandardizedWord.kt first.
+                                // But I cannot stop tool execution mid-way. 
+                                // I will proceed assuming I will fix StandardizedWord.kt immediately after.
+                                
+                                // Actually, I can use a local data class or map, but better to fix the file.
+                                // Let's use a temporary parsing logic or fix the file in next step.
+                                // No, I should fix the file first.
+                                // I will cancel this edit? No, I can't.
+                                // I will write the code that assumes updated class, and then update the class.
+                                
+                                val wordToSave = stdWord.toEntity(
+                                    libraryId = _currentLibraryId.value,
+                                    // These fields will be added to StandardizedWord in next step
+                                    example = stdWord.example,
+                                    memoryMethod = stdWord.memoryMethod,
+                                    definitionEn = stdWord.definitionEn
+                                )
                                 wordDao.insertWord(wordToSave)
-                                importedWordsSet.add(detail.word.lowercase().trim())
-                                _importLogs.value = _importLogs.value + "📥 已保存: ${detail.word}"
+                                importedWordsSet.add(stdWord.word.lowercase().trim())
+                                _importLogs.value = _importLogs.value + "📥 已保存: ${stdWord.word}"
                             }
                         } else {
                             throw Exception("AI 返回格式错误 (找不到 JSON Array)")
@@ -513,10 +566,13 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                             STRICT JSON FORMAT RULES:
                             1. "word": String.
                             2. "phonetic": String.
-                            3. "definition_cn": String (NOT List). Format: "pos. meaning".
-                            4. "definition_en": String.
-                            5. "example": String (NOT List). Format: "En sentence. Cn translation.\nEn sentence 2. Cn translation."
-                            6. "memory_method": String (NOT List). Escape double quotes inside strings with backslash.
+                            3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
+                               - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
+                               - "pos": String (e.g., "n", "v", "adj").
+                               - "meaning": String (Chinese definition).
+                            4. "definition_en": String (Brief English definition).
+                            5. "example": String. Format: "En sentence. Cn translation."
+                            6. "memory_method": String. Escape double quotes inside strings with backslash.
                             
                             IMPORTANT: Ensure valid JSON syntax. No trailing commas.
                             NO MARKDOWN. NO COMMENTS. ONLY JSON.
@@ -536,13 +592,18 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                              
                              if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
                                 val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
-                                val wordDetails: List<Word> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<Word>>() {}.type)
+                                val standardizedWords: List<StandardizedWord> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
                                 
-                                wordDetails.forEach { detail ->
-                                    val wordToSave = detail.copy(libraryId = _currentLibraryId.value)
+                                standardizedWords.forEach { stdWord ->
+                                    val wordToSave = stdWord.toEntity(
+                                        libraryId = _currentLibraryId.value,
+                                        example = stdWord.example,
+                                        memoryMethod = stdWord.memoryMethod,
+                                        definitionEn = stdWord.definitionEn
+                                    )
                                     wordDao.insertWord(wordToSave)
-                                    importedWordsSet.add(detail.word.lowercase().trim())
-                                    _importLogs.value = _importLogs.value + "📥 补录成功: ${detail.word}"
+                                    importedWordsSet.add(stdWord.word.lowercase().trim())
+                                    _importLogs.value = _importLogs.value + "📥 补录成功: ${stdWord.word}"
                                 }
                              } else {
                                 throw Exception("AI 返回格式错误")
