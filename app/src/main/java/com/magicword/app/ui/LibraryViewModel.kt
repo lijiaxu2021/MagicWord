@@ -727,6 +727,14 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                     }
                 }
 
+                // Step D: Post-Import Sanity Check & Fix
+                // Gather all imported words in this session for validation
+                val sessionImportedWords = importedWordsSet.toList()
+                if (sessionImportedWords.isNotEmpty()) {
+                    _importLogs.value = _importLogs.value + "Step D: 正在进行数据质量检查 (AI Sanity Check)..."
+                    validateAndFixImportedWords(sessionImportedWords)
+                }
+
                 _importLogs.value = _importLogs.value + "🎉 所有任务处理完毕！最终导入: ${importedWordsSet.size}/${wordsList.size}"
                 
             } catch (e: Exception) {
@@ -814,6 +822,118 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             }
             LogUtil.logError("ImportChunk", "Failed", e)
             _importLogs.value = _importLogs.value + "🔍 错误详情: ${e.message}"
+        }
+    }
+
+    // Step D: Validation Logic
+    private suspend fun validateAndFixImportedWords(words: List<String>) {
+        val batchSize = 30
+        val batches = words.chunked(batchSize)
+        
+        batches.forEachIndexed { index, batch ->
+            _importLogs.value = _importLogs.value + "🔍 检查批次 ${index + 1}/${batches.size}..."
+            
+            // 1. Fetch current data for these words to show AI (Context)
+            // Or just give AI the list of words and ask it to generate "Good JSON" for any that might be broken?
+            // User strategy: "把导入完的所有单词的这些数据... 给ai... 问他哪个有问题"
+            // To save tokens, we might just send the WORDS. But if we want it to check EXISTING data, we need to fetch it.
+            // Sending full JSON for 30 words might be heavy.
+            // User said: "问他哪个有问题 ... 只用json返回有问题了"
+            // Let's try sending just the WORD list and asking it to GENERATE valid data for them if they are complex/ambiguous,
+            // OR we can fetch the `definitionCn` from DB and send "Word: Def" pairs.
+            // Let's go with fetching the full Word objects to be precise, as "n.诗;n.诗" is in the definition.
+            
+            val dbWords = mutableListOf<Word>()
+            batch.forEach { wordText ->
+                val w = wordDao.getWordByText(wordText, _currentLibraryId.value)
+                if (w != null) dbWords.add(w)
+            }
+            
+            if (dbWords.isEmpty()) return@forEachIndexed
+
+            // Construct minimal representation for check
+            val checkData = dbWords.map { 
+                mapOf(
+                    "id" to it.id,
+                    "word" to it.word,
+                    "definition" to it.definitionCn
+                )
+            }
+            
+            val checkPrompt = """
+                Analyze the following list of imported words. 
+                Identify entries that look incorrect, hallucinated, repetitive (e.g., "n. poem; n. poem; n. poem"), or garbage.
+                
+                Input Data: ${Gson().toJson(checkData)}
+                
+                Task:
+                1. Find the BAD entries.
+                2. RE-GENERATE the correct full JSON data for ONLY the bad entries.
+                3. Return a JSON Array of the fixed objects (StandardizedWord format).
+                4. If all are good, return empty array [].
+                
+                StandardizedWord Format (for return):
+                {
+                  "word": "...",
+                  "phonetic": "...",
+                  "senses": { ... },
+                  "definition_en": "...",
+                  "example": "...",
+                  "memory_method": "...",
+                  "forms": { ... }
+                }
+            """.trimIndent()
+            
+            val request = AiRequest(
+                model = "Qwen/Qwen2.5-7B-Instruct",
+                messages = listOf(Message("user", checkPrompt)),
+                temperature = 0.1
+            )
+            
+            try {
+                val response = RetrofitClient.api.chat(request)
+                val content = response.choices.first().message.content
+                
+                val jsonStart = content.indexOf('[')
+                val jsonEnd = content.lastIndexOf(']') + 1
+                
+                if (jsonStart != -1 && jsonEnd > jsonStart) {
+                    val jsonStr = content.substring(jsonStart, jsonEnd)
+                    val fixedWords: List<StandardizedWord> = Gson().fromJson(jsonStr, object : TypeToken<List<StandardizedWord>>() {}.type)
+                    
+                    if (fixedWords.isNotEmpty()) {
+                        _importLogs.value = _importLogs.value + "🛠️ 发现并修复 ${fixedWords.size} 个异常数据..."
+                        
+                        fixedWords.forEach { stdWord ->
+                            // Find original ID to update
+                            // We match by word text (assuming uniqueness in library)
+                            val original = dbWords.find { it.word.equals(stdWord.word, ignoreCase = true) }
+                            
+                            if (original != null) {
+                                val fixedEntity = stdWord.toEntity(
+                                    libraryId = original.libraryId,
+                                    example = stdWord.example,
+                                    memoryMethod = stdWord.memoryMethod,
+                                    definitionEn = stdWord.definitionEn
+                                ).copy(
+                                    id = original.id, // Preserve ID
+                                    createdAt = original.createdAt,
+                                    reviewCount = original.reviewCount,
+                                    lastReviewTime = original.lastReviewTime,
+                                    nextReviewTime = original.nextReviewTime,
+                                    easinessFactor = original.easinessFactor,
+                                    interval = original.interval,
+                                    repetitions = original.repetitions
+                                )
+                                wordDao.updateWord(fixedEntity)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtil.logError("SanityCheck", "BatchFailed", e)
+                _importLogs.value = _importLogs.value + "⚠️ 检查批次失败: ${e.message}"
+            }
         }
     }
 }
