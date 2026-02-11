@@ -100,12 +100,12 @@ fun WordCard(
             ) {
                 WordDetailContent(word = word)
                 
-                // Edit Button on the back
+                // Edit Button on the back (Top Right)
                 IconButton(
                     onClick = onEditClick,
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Word")
                 }
             }
         }

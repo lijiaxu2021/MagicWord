@@ -327,6 +327,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 topBar = {
                     CenterAlignedTopAppBar(
                         title = {
+                            // Title with integrated switch button
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.clickable { showLibrarySheet = true }
@@ -336,7 +337,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.SwapHoriz, contentDescription = "Switch Library", modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
                             }
                         },
                         actions = {
@@ -385,7 +386,7 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                             ) {
                                 WordCard(
                                     word = word,
-                                    onEditClick = { editingWord = word }
+                                    onEditClick = { editingWord = word } // Pencil button now opens edit dialog directly
                                 )
                             }
                         }
