@@ -50,6 +50,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -106,11 +108,11 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
     var showSideList by remember { mutableStateOf(false) }
     
     // Jump Navigation Logic
-    var pendingJumpWordId by remember { mutableStateOf<Int?>(null) }
+    // Listen to ViewModel state
+    val pendingJumpWordId by viewModel.pendingJumpWordId.collectAsState()
     
-    LaunchedEffect(Unit) {
-        viewModel.jumpToWordEvent.collect { (_, wordId) ->
-            pendingJumpWordId = wordId
+    LaunchedEffect(pendingJumpWordId) {
+        if (pendingJumpWordId != null) {
             isNavigatingFromSearch = true // Prevent auto-restore logic interfering
             isListMode = false // Force Card Mode
         }
@@ -138,6 +140,17 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                  isListMode = false
                  pagerState.scrollToPage(index)
                  viewModel.clearGlobalSearchResult()
+             }
+        }
+    }
+    
+    // Handle Pending Jump (from WordListScreen or other sources)
+    LaunchedEffect(words, pendingJumpWordId) {
+        if (pendingJumpWordId != null && words.isNotEmpty()) {
+             val index = words.indexOfFirst { it.id == pendingJumpWordId }
+             if (index != -1) {
+                 pagerState.scrollToPage(index)
+                 viewModel.clearPendingJump()
              }
         }
     }
@@ -528,13 +541,30 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                             exit = slideOutHorizontally { it } + shrinkHorizontally(shrinkTowards = Alignment.Start)
                         ) {
                             val sideListState = rememberLazyListState()
+                            val density = LocalDensity.current
+                            val itemHeightDp = 40.dp
+                            
                             LaunchedEffect(pagerState.currentPage) {
-                                 sideListState.animateScrollToItem(pagerState.currentPage)
+                                 // Center the item: offset = (viewportHeight / 2) - (itemHeight / 2)
+                                 // We need viewport height. If not available yet, we rely on layout info change?
+                                 // Actually, we can get it from sideListState.layoutInfo.viewportSize.height
+                                 // But inside LaunchedEffect, it might be 0 initially.
+                                 // A simple way is to use a large enough offset or wait for layout.
+                                 // Let's try to get it from layoutInfo.
+                                 val viewportHeight = sideListState.layoutInfo.viewportSize.height
+                                 if (viewportHeight > 0) {
+                                     val itemHeightPx = with(density) { itemHeightDp.toPx() }
+                                     val offset = (viewportHeight / 2) - (itemHeightPx / 2)
+                                     sideListState.animateScrollToItem(pagerState.currentPage, -offset.toInt())
+                                 } else {
+                                     sideListState.animateScrollToItem(pagerState.currentPage)
+                                 }
                             }
+                            
                             LazyColumn(
                                 state = sideListState,
                                 modifier = Modifier
-                                    .width(60.dp)
+                                    .width(90.dp)
                                     .fillMaxHeight()
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
@@ -543,7 +573,8 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(40.dp)
+                                            .height(itemHeightDp)
+                                            .background(if (isSelected) Color(0xFF2196F3) else Color.Transparent)
                                             .clickable { scope.launch { pagerState.scrollToPage(index) } },
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -552,7 +583,7 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         )
                                     }

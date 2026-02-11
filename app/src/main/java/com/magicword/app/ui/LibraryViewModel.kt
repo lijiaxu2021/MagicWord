@@ -922,23 +922,21 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
     }
 
     // --- Jump Navigation ---
-    // Event: Pair<LibraryId, WordId>
-    private val _jumpToWordEvent = MutableSharedFlow<Pair<Int, Int>>(replay = 0)
-    val jumpToWordEvent: SharedFlow<Pair<Int, Int>> = _jumpToWordEvent
+    // Persistent state for pending jump
+    private val _pendingJumpWordId = MutableStateFlow<Int?>(null)
+    val pendingJumpWordId: StateFlow<Int?> = _pendingJumpWordId.asStateFlow()
+
+    fun clearPendingJump() {
+        _pendingJumpWordId.value = null
+    }
 
     fun jumpToWord(libraryId: Int, wordId: Int) {
         viewModelScope.launch {
             // 1. Switch Library
             switchLibrary(libraryId)
             
-            // 2. Find index of word in that library (sorted by current sort option?)
-            // This is tricky because WordsScreen sort might differ. 
-            // We assume WordsScreen observes `allWords`.
-            // We can't easily calculate index here without knowing exact sort.
-            // But we can pass the ID and let UI handle it, or we try to find it.
-            // Let's pass the ID and let UI find the index in its list.
-            
-            _jumpToWordEvent.emit(libraryId to wordId)
+            // 2. Set pending jump ID
+            _pendingJumpWordId.value = wordId
         }
     }
 }
