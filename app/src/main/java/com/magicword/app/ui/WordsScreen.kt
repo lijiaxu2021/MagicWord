@@ -51,7 +51,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.Color
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -474,7 +474,8 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
                  val index = words.indexOfFirst { it.id == pendingJumpWordId }
                  if (index != -1) {
                      pagerState.scrollToPage(index)
-                     pendingJumpWordId = null
+                     // pendingJumpWordId is read-only from StateFlow, so we clear it via ViewModel
+                     viewModel.clearPendingJump()
                  }
             } else if (!isNavigatingFromSearch) {
                 // Check if we have a saved index
