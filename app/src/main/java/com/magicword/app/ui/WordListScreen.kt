@@ -222,6 +222,7 @@ fun WordListScreen(viewModel: LibraryViewModel) {
             }
         }
     }
+    }
     
     if (showCreateDialog) {
         CreateWordListDialog(

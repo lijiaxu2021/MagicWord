@@ -661,6 +661,7 @@ fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToT
         }
     }
 }
+}
 
 @Composable
 fun TestTypeSelectionDialog(onDismiss: () -> Unit, onConfirm: (LibraryViewModel.TestType) -> Unit) {
