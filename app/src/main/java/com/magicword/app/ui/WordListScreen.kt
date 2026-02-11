@@ -1,25 +1,35 @@
 package com.magicword.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.magicword.app.data.Library
@@ -36,44 +46,144 @@ fun WordListScreen(viewModel: LibraryViewModel) {
     
     var showCreateDialog by remember { mutableStateOf(false) }
     
-    // Display Mode: 0=Both, 1=En, 2=Cn
+    // Display Mode: 0=Both, 1=En (Table), 2=Cn
     var displayMode by remember { mutableIntStateOf(0) }
+    
+    // Right Drawer State
+    var showDrawer by remember { mutableStateOf(false) }
     
     val currentWordList = wordLists.find { it.id == currentWordListId }
     
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, "Create List")
+    // Shared List State for scrolling
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    
+    // Map of Library ID to Start Index (for jumping)
+    val libraryIndexMap = remember { mutableStateMapOf<Int, Int>() }
+    
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            floatingActionButton = {
+                FloatingActionButton(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Default.Add, "Create List")
+                }
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+                // Top Bar / Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        WordListSelector(
+                            wordLists = wordLists,
+                            currentList = currentWordList,
+                            onSelect = { viewModel.setCurrentWordListId(it.id) },
+                            onDelete = { viewModel.deleteWordList(it) }
+                        )
+                    }
+                    // Drawer Trigger
+                    IconButton(onClick = { showDrawer = !showDrawer }) {
+                        Icon(Icons.Default.Menu, "Libraries")
+                    }
+                }
+                
+                if (currentWordList != null) {
+                    // Content
+                    WordListContent(
+                        wordList = currentWordList,
+                        allLibraries = allLibraries,
+                        viewModel = viewModel,
+                        displayMode = displayMode,
+                        listState = listState,
+                        onToggleMode = {
+                            displayMode = (displayMode + 1) % 3
+                        },
+                        onWordClick = { libId, wordId ->
+                            viewModel.jumpToWord(libId, wordId)
+                        },
+                        onLibraryPositionsCalculated = { map ->
+                            libraryIndexMap.clear()
+                            libraryIndexMap.putAll(map)
+                        }
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("请创建或选择一个单词表")
+                    }
+                }
             }
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // Top Bar / Selector
-            WordListSelector(
-                wordLists = wordLists,
-                currentList = currentWordList,
-                onSelect = { viewModel.setCurrentWordListId(it.id) },
-                onDelete = { viewModel.deleteWordList(it) }
+        
+        // Right Drawer Overlay
+        // Dimming Background
+        if (showDrawer) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .zIndex(1f)
+                    .clickable { showDrawer = false }
             )
-            
-            if (currentWordList != null) {
-                // Content
-                WordListContent(
-                    wordList = currentWordList,
-                    allLibraries = allLibraries,
-                    viewModel = viewModel,
-                    displayMode = displayMode,
-                    onToggleMode = {
-                        displayMode = (displayMode + 1) % 3
+        }
+        
+        // Drawer Content
+        AnimatedVisibility(
+            visible = showDrawer,
+            enter = slideInHorizontally(initialOffsetX = { it }), // From Right
+            exit = slideOutHorizontally(targetOffsetX = { it }),
+            modifier = Modifier.align(Alignment.CenterEnd).zIndex(2f)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(min = 250.dp, max = 300.dp)
+                    .pointerInput(Unit) {
+                        // Consume clicks to prevent closing when clicking inside drawer
+                        detectTapGestures { } 
                     },
-                    onWordClick = { libId, wordId ->
-                        viewModel.jumpToWord(libId, wordId)
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp
+            ) {
+                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                    Text(
+                        "包含的词库",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    if (currentWordList != null) {
+                        val libraryIds: List<Int> = remember(currentWordList.libraryIdsJson) {
+                            try {
+                                val type = object : TypeToken<List<Int>>() {}.type
+                                Gson().fromJson(currentWordList.libraryIdsJson, type) ?: emptyList()
+                            } catch (e: Exception) {
+                                emptyList()
+                            }
+                        }
+                        
+                        LazyColumn {
+                            items(libraryIds) { libId ->
+                                val lib = allLibraries.find { it.id == libId }
+                                if (lib != null) {
+                                    ListItem(
+                                        headlineContent = { Text(lib.name) },
+                                        modifier = Modifier.clickable {
+                                            scope.launch {
+                                                val index = libraryIndexMap[libId]
+                                                if (index != null) {
+                                                    listState.scrollToItem(index)
+                                                }
+                                                showDrawer = false
+                                            }
+                                        }
+                                    )
+                                    Divider()
+                                }
+                            }
+                        }
                     }
-                )
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("请创建或选择一个单词表")
                 }
             }
         }
@@ -100,7 +210,7 @@ fun WordListSelector(
 ) {
     var expanded by remember { mutableStateOf(false) }
     
-    Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
         Button(
             onClick = { expanded = true },
             modifier = Modifier.fillMaxWidth(),
@@ -147,9 +257,14 @@ fun WordListContent(
     allLibraries: List<Library>,
     viewModel: LibraryViewModel,
     displayMode: Int,
+    listState: androidx.compose.foundation.lazy.LazyListState,
     onToggleMode: () -> Unit,
-    onWordClick: (Int, Int) -> Unit
+    onWordClick: (Int, Int) -> Unit,
+    onLibraryPositionsCalculated: (Map<Int, Int>) -> Unit
 ) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("word_list_prefs", android.content.Context.MODE_PRIVATE) }
+    
     // Parse library IDs
     val libraryIds: List<Int> = remember(wordList.libraryIdsJson) {
         try {
@@ -160,25 +275,12 @@ fun WordListContent(
         }
     }
     
-    // Fetch words for these libraries
-    // Note: We need to fetch words. Since this is a Composable, we can use `produceState` or observe flows.
-    // Ideally viewModel should provide a flow for "Words in Current WordList".
-    // But for simplicity, we can fetch them here using a LaunchedEffect if viewModel exposes a fetch function,
-    // or better, create a derived flow in ViewModel. 
-    // Given the constraints, let's just query via Dao in ViewModel and expose a State.
-    // BUT, we can reuse `viewModel.wordDao.getWordsByLibrary(id)` flow.
-    
-    // Let's load them all. This might be heavy if lists are huge.
-    // "WordList" implies a collection. 
-    
-    // Quick solution: Create a map of Library -> List<Word>
+    // Fetch words
     val libraryWordsMap = remember { mutableStateMapOf<Int, List<Word>>() }
     
     LaunchedEffect(libraryIds) {
         libraryWordsMap.clear()
         libraryIds.forEach { libId ->
-            // We need a suspend function to get list, flow is annoying inside loop for map
-            // Assuming we added `getWordsByLibraryList` (suspend) in Dao
              try {
                  val words = viewModel.wordDao.getWordsByLibraryList(libId)
                  libraryWordsMap[libId] = words
@@ -188,7 +290,59 @@ fun WordListContent(
         }
     }
     
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    // Restore Position
+    LaunchedEffect(wordList.id) {
+        val index = prefs.getInt("scroll_index_${wordList.id}", 0)
+        val offset = prefs.getInt("scroll_offset_${wordList.id}", 0)
+        if (index >= 0) {
+            listState.scrollToItem(index, offset)
+        }
+    }
+    
+    // Save Position
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                prefs.edit()
+                    .putInt("scroll_index_${wordList.id}", index)
+                    .putInt("scroll_offset_${wordList.id}", offset)
+                    .apply()
+            }
+    }
+    
+    // Calculate Indices for Jumping
+    // Since we build the list dynamically, we need to know where each library starts.
+    // We can do this by pre-calculating or just using the sticky header indices?
+    // LazyColumn items logic:
+    // Header (1) + Items (N) + Header (1) + Items (M)...
+    // We can calculate this:
+    LaunchedEffect(libraryWordsMap.size, displayMode) {
+        val map = mutableMapOf<Int, Int>()
+        var currentIndex = 0
+        libraryIds.forEach { libId ->
+            val words = libraryWordsMap[libId] ?: emptyList()
+            if (words.isNotEmpty()) {
+                map[libId] = currentIndex // Header is here
+                currentIndex++ // Header
+                
+                // Add items count
+                if (displayMode == 1) {
+                    // Table Mode: Chunked by 3
+                    val rows = (words.size + 2) / 3
+                    currentIndex += rows
+                } else {
+                    // List Mode
+                    currentIndex += words.size
+                }
+            }
+        }
+        onLibraryPositionsCalculated(map)
+    }
+    
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize()
+    ) {
         libraryIds.forEach { libId ->
             val library = allLibraries.find { it.id == libId }
             val words = libraryWordsMap[libId] ?: emptyList()
@@ -210,14 +364,64 @@ fun WordListContent(
                     }
                 }
                 
-                items(words) { word ->
-                    WordListItem(
-                        word = word,
-                        displayMode = displayMode,
-                        onLongClick = onToggleMode,
-                        onClick = { onWordClick(libId, word.id) }
-                    )
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                if (displayMode == 1) {
+                    // Table Mode (English Only, Compact)
+                    val chunks = words.chunked(3)
+                    items(chunks) { chunk ->
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            chunk.forEach { word ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(60.dp)
+                                        .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                                        .pointerInput(Unit) {
+                                            detectTapGestures(
+                                                onDoubleTap = {
+                                                     onWordClick(libId, word.id)
+                                                },
+                                                onLongPress = {
+                                                     onToggleMode()
+                                                },
+                                                onTap = {
+                                                     // Single tap logic if needed
+                                                }
+                                            )
+                                        }
+                                        .padding(4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = word.word,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Center,
+                                        overflow = TextOverflow.Ellipsis,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                            // Fill remaining space if chunk < 3
+                            repeat(3 - chunk.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                } else {
+                    // List Mode
+                    items(words) { word ->
+                        WordListItem(
+                            word = word,
+                            displayMode = displayMode,
+                            onLongClick = onToggleMode,
+                            onClick = { 
+                                // Single Click - maybe nothing or edit?
+                            },
+                            onDoubleClick = {
+                                onWordClick(libId, word.id)
+                            }
+                        )
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    }
                 }
             }
         }
@@ -234,15 +438,19 @@ fun WordListItem(
     word: Word,
     displayMode: Int, // 0=Both, 1=En, 2=Cn
     onLongClick: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDoubleClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { onLongClick() },
+                    onDoubleTap = { onDoubleClick() },
+                    onTap = { onClick() }
+                )
+            }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

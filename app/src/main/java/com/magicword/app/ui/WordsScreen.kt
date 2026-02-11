@@ -47,7 +47,7 @@ import androidx.compose.ui.draw.scale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun WordsScreen(onOpenSettings: () -> Unit, onJumpToTest: () -> Unit) {
+fun WordsScreen(onOpenSettings: () -> Unit, onOpenProfile: () -> Unit, onJumpToTest: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     val database = AppDatabase.getDatabase(context)
@@ -235,19 +235,26 @@ fun WordsScreen(onOpenSettings: () -> Unit, onJumpToTest: () -> Unit) {
                                 }
                                 
                                 if (showTestTypeDialog) {
-                                        TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
-                                            val selectedList = words.filter { selectedWords.contains(it.id) }
-                                            viewModel.setTestCandidates(selectedList)
-                                            viewModel.setTestType(type)
-                                            showTestTypeDialog = false
-                                            onJumpToTest() // Navigate to Test Screen
-                                        })
-                                    }
+                                    TestTypeSelectionDialog(onDismiss = { showTestTypeDialog = false }, onConfirm = { type ->
+                                        val selectedList = words.filter { selectedWords.contains(it.id) }
+                                        viewModel.setTestCandidates(selectedList)
+                                        viewModel.setTestType(type)
+                                        showTestTypeDialog = false
+                                        onJumpToTest() // Navigate to Test Screen
+                                    })
                                 }
-                            } else {
-                                // Empty navigation icon to keep spacing or add back button if needed
                             }
-                        },
+                        } else {
+                            // Profile Icon
+                            IconButton(onClick = onOpenProfile) {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = "Profile",
+                                    modifier = Modifier.size(32.dp).clip(CircleShape)
+                                )
+                            }
+                        }
+                    },
                     actions = {
                         // Action buttons based on mode
                         if (isListMode) {

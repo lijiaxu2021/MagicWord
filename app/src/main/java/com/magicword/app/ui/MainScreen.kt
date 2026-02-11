@@ -95,9 +95,16 @@ fun MainScreen() {
     val items = listOf(
         Screen.Study,
         Screen.Words,
-        Screen.WordList, // New Tab
-        Screen.Test
+        Screen.Test,
+        Screen.WordList // Moved to end
     )
+
+    // Observe Jump Event to switch tabs
+    LaunchedEffect(Unit) {
+        viewModel.jumpToWordEvent.collect {
+            pagerState.scrollToPage(1) // Switch to Words tab (Index 1)
+        }
+    }
 
     // Current Screen State management for overlays (Settings, Logs, Profile)
     var currentOverlay by remember { mutableStateOf<String?>(null) } // null, "settings", "logs", "profile"
@@ -119,23 +126,7 @@ fun MainScreen() {
         )
     } else {
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("MagicWord - $currentLibraryName") },
-                    navigationIcon = {
-                        IconButton(onClick = { currentOverlay = "profile" }) {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Profile",
-                                modifier = Modifier.size(32.dp).clip(CircleShape)
-                            )
-                        }
-                    },
-                    actions = {
-                        // Keep Settings shortcut if needed, or rely on Profile for settings
-                    }
-                )
-            },
+            // Removed global TopBar to prevent conflict with screen-specific TopBars
             bottomBar = {
                 NavigationBar {
                     items.forEachIndexed { index, screen ->
@@ -164,12 +155,13 @@ fun MainScreen() {
                         0 -> StudyScreen() // New Screen
                         1 -> WordsScreen(
                             onOpenSettings = { currentOverlay = "settings" },
+                            onOpenProfile = { currentOverlay = "profile" },
                             onJumpToTest = {
-                                scope.launch { pagerState.animateScrollToPage(3) }
+                                scope.launch { pagerState.animateScrollToPage(2) } // Test is now index 2
                             }
                         )
-                        2 -> WordListScreen(viewModel)
-                        3 -> TestScreen()
+                        2 -> TestScreen() // Test is now index 2
+                        3 -> WordListScreen(viewModel) // WordList is now index 3
                     }
                 }
             }
@@ -180,6 +172,6 @@ fun MainScreen() {
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Study : Screen("study", "学习", Icons.Default.School) // New Screen
     object Words : Screen("words", "词库", Icons.Default.Book)
-    object WordList : Screen("list", "单词表", Icons.Default.List) // New Tab
     object Test : Screen("test", "测试", Icons.Default.CheckCircle)
+    object WordList : Screen("list", "单词表", Icons.Default.List) // New Tab
 }
