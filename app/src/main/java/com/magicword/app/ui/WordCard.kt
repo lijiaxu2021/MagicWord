@@ -38,6 +38,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.graphics.Color
+
 @Composable
 fun WordCard(
     word: Word,
@@ -119,6 +126,7 @@ fun WordDetailContent(word: Word) {
             .padding(24.dp)
             .verticalScroll(rememberScrollState())
     ) {
+        // ... (Header and Definition parts remain same)
         // Header: Word + Phonetic
         Text(
             text = word.word,
@@ -204,5 +212,56 @@ fun WordDetailContent(word: Word) {
                 }
             }
         }
+        
+        // Statistics Section
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "STATISTICS",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val correctRate = if (word.reviewCount > 0) "${(word.correctCount * 100 / word.reviewCount)}%" else "0%"
+        val nextReview = if (word.nextReviewTime > System.currentTimeMillis()) {
+            dateFormat.format(Date(word.nextReviewTime))
+        } else {
+            "Now"
+        }
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            StatItem("学习次数", "${word.reviewCount}")
+            StatItem("正确率", correctRate, if (word.correctCount > 0) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface)
+            StatItem("下次复习", nextReview)
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+             StatItem("录入时间", dateFormat.format(Date(word.createdAt)))
+             // Add Last Review Time?
+             if (word.lastReviewTime > 0) {
+                 StatItem("上次复习", dateFormat.format(Date(word.lastReviewTime)))
+             }
+        }
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String, valueColor: Color = MaterialTheme.colorScheme.onSurface) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = valueColor
+        )
     }
 }
