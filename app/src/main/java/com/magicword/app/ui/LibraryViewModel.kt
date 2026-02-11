@@ -756,8 +756,39 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         chunkQueue: ArrayDeque<Pair<List<String>, Int>>,
         importedWordsSet: MutableSet<String>
     ) {
+        try {
+            val standardizedWords = fetchWordDefinitionsFromAi(chunk)
+            
+            if (standardizedWords.size < chunk.size) {
+                _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${standardizedWords.size}/${chunk.size})，正在检查漏词..."
+            }
+
+            standardizedWords.forEach { stdWord ->
+                val wordToSave = stdWord.toEntity(
+                    libraryId = _currentLibraryId.value,
+                    example = stdWord.example,
+                    memoryMethod = stdWord.memoryMethod,
+                    definitionEn = stdWord.definitionEn
+                )
+                wordDao.insertWord(wordToSave)
+                importedWordsSet.add(stdWord.word.lowercase().trim())
+                _importLogs.value = _importLogs.value + "📥 已保存: ${stdWord.word}"
+            }
+        } catch (e: Exception) {
+            if (retryCount < maxRetries) {
+                _importLogs.value = _importLogs.value + "⚠️ 本批次失败，已重新加入队列 (重试 ${retryCount + 1}/$maxRetries): ${e.message}"
+                chunkQueue.addLast(chunk to (retryCount + 1))
+            } else {
+                _importLogs.value = _importLogs.value + "❌ 本批次彻底失败，放弃: $chunk"
+            }
+            LogUtil.logError("ImportChunk", "Failed", e)
+            _importLogs.value = _importLogs.value + "🔍 错误详情: ${e.message}"
+        }
+    }
+
+    private suspend fun fetchWordDefinitionsFromAi(words: List<String>): List<StandardizedWord> {
         val chunkPrompt = """
-            You are a strict JSON data generator. Analyze these English words: $chunk
+            You are a strict JSON data generator. Analyze these English words: $words
             
             Return a JSON Array of objects.
             
@@ -787,43 +818,16 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             temperature = 0.3
         )
 
-        try {
-            val chunkResponse = RetrofitClient.api.chat(chunkRequest)
-            val chunkContent = chunkResponse.choices.first().message.content
-            
-            val chunkJsonStart = chunkContent.indexOf('[')
-            val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
-            if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
-                val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
-                val standardizedWords: List<StandardizedWord> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
-                
-                if (standardizedWords.size < chunk.size) {
-                    _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${standardizedWords.size}/${chunk.size})，正在检查漏词..."
-                }
-
-                standardizedWords.forEach { stdWord ->
-                    val wordToSave = stdWord.toEntity(
-                        libraryId = _currentLibraryId.value,
-                        example = stdWord.example,
-                        memoryMethod = stdWord.memoryMethod,
-                        definitionEn = stdWord.definitionEn
-                    )
-                    wordDao.insertWord(wordToSave)
-                    importedWordsSet.add(stdWord.word.lowercase().trim())
-                    _importLogs.value = _importLogs.value + "📥 已保存: ${stdWord.word}"
-                }
-            } else {
-                throw Exception("AI 返回格式错误 (找不到 JSON Array)")
-            }
-        } catch (e: Exception) {
-            if (retryCount < maxRetries) {
-                _importLogs.value = _importLogs.value + "⚠️ 本批次失败，已重新加入队列 (重试 ${retryCount + 1}/$maxRetries): ${e.message}"
-                chunkQueue.addLast(chunk to (retryCount + 1))
-            } else {
-                _importLogs.value = _importLogs.value + "❌ 本批次彻底失败，放弃: $chunk"
-            }
-            LogUtil.logError("ImportChunk", "Failed", e)
-            _importLogs.value = _importLogs.value + "🔍 错误详情: ${e.message}"
+        val chunkResponse = RetrofitClient.api.chat(chunkRequest)
+        val chunkContent = chunkResponse.choices.first().message.content
+        
+        val chunkJsonStart = chunkContent.indexOf('[')
+        val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
+        if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
+            val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
+            return com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
+        } else {
+            throw Exception("AI 返回格式错误 (找不到 JSON Array)")
         }
     }
 
@@ -835,16 +839,6 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         batches.forEachIndexed { index, batch ->
             _importLogs.value = _importLogs.value + "🔍 检查批次 ${index + 1}/${batches.size}..."
             
-            // 1. Fetch current data for these words to show AI (Context)
-            // Or just give AI the list of words and ask it to generate "Good JSON" for any that might be broken?
-            // User strategy: "把导入完的所有单词的这些数据... 给ai... 问他哪个有问题"
-            // To save tokens, we might just send the WORDS. But if we want it to check EXISTING data, we need to fetch it.
-            // Sending full JSON for 30 words might be heavy.
-            // User said: "问他哪个有问题 ... 只用json返回有问题了"
-            // Let's try sending just the WORD list and asking it to GENERATE valid data for them if they are complex/ambiguous,
-            // OR we can fetch the `definitionCn` from DB and send "Word: Def" pairs.
-            // Let's go with fetching the full Word objects to be precise, as "n.诗;n.诗" is in the definition.
-            
             val dbWords = mutableListOf<Word>()
             batch.forEach { wordText ->
                 val w = wordDao.getWordByText(wordText, _currentLibraryId.value)
@@ -853,7 +847,6 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             
             if (dbWords.isEmpty()) return@forEachIndexed
 
-            // Construct minimal representation for check
             val checkData = dbWords.map { 
                 mapOf(
                     "id" to it.id,
@@ -870,20 +863,10 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 
                 Task:
                 1. Find the BAD entries.
-                2. RE-GENERATE the correct full JSON data for ONLY the bad entries.
-                3. Return a JSON Array of the fixed objects (StandardizedWord format).
-                4. If all are good, return empty array [].
+                2. Return a JSON Array of STRINGS (the 'word' field only) for the bad entries.
+                3. If all are good, return empty array [].
                 
-                StandardizedWord Format (for return):
-                {
-                  "word": "...",
-                  "phonetic": "...",
-                  "senses": { ... },
-                  "definition_en": "...",
-                  "example": "...",
-                  "memory_method": "...",
-                  "forms": { ... }
-                }
+                Example Return: ["badword1", "badword2"]
             """.trimIndent()
             
             val request = AiRequest(
@@ -901,34 +884,42 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 
                 if (jsonStart != -1 && jsonEnd > jsonStart) {
                     val jsonStr = content.substring(jsonStart, jsonEnd)
-                    val fixedWords: List<StandardizedWord> = Gson().fromJson(jsonStr, object : TypeToken<List<StandardizedWord>>() {}.type)
+                    val badWords: List<String> = Gson().fromJson(jsonStr, object : TypeToken<List<String>>() {}.type)
                     
-                    if (fixedWords.isNotEmpty()) {
-                        _importLogs.value = _importLogs.value + "🛠️ 发现并修复 ${fixedWords.size} 个异常数据..."
+                    if (badWords.isNotEmpty()) {
+                        _importLogs.value = _importLogs.value + "⚠️ 发现 ${badWords.size} 个异常单词，正在重新生成..."
                         
-                        fixedWords.forEach { stdWord ->
-                            // Find original ID to update
-                            // We match by word text (assuming uniqueness in library)
-                            val original = dbWords.find { it.word.equals(stdWord.word, ignoreCase = true) }
+                        // Re-generate full data for bad words using the standard logic
+                        try {
+                            val fixedWords = fetchWordDefinitionsFromAi(badWords)
                             
-                            if (original != null) {
-                                val fixedEntity = stdWord.toEntity(
-                                    libraryId = original.libraryId,
-                                    example = stdWord.example,
-                                    memoryMethod = stdWord.memoryMethod,
-                                    definitionEn = stdWord.definitionEn
-                                ).copy(
-                                    id = original.id, // Preserve ID
-                                    createdAt = original.createdAt,
-                                    reviewCount = original.reviewCount,
-                                    lastReviewTime = original.lastReviewTime,
-                                    nextReviewTime = original.nextReviewTime,
-                                    easinessFactor = original.easinessFactor,
-                                    interval = original.interval,
-                                    repetitions = original.repetitions
-                                )
-                                wordDao.updateWord(fixedEntity)
+                            fixedWords.forEach { stdWord ->
+                                // Find original ID to update
+                                val original = dbWords.find { it.word.equals(stdWord.word, ignoreCase = true) }
+                                
+                                if (original != null) {
+                                    val fixedEntity = stdWord.toEntity(
+                                        libraryId = original.libraryId,
+                                        example = stdWord.example,
+                                        memoryMethod = stdWord.memoryMethod,
+                                        definitionEn = stdWord.definitionEn
+                                    ).copy(
+                                        id = original.id, // Preserve ID
+                                        createdAt = original.createdAt,
+                                        reviewCount = original.reviewCount,
+                                        lastReviewTime = original.lastReviewTime,
+                                        nextReviewTime = original.nextReviewTime,
+                                        easinessFactor = original.easinessFactor,
+                                        interval = original.interval,
+                                        repetitions = original.repetitions
+                                    )
+                                    wordDao.updateWord(fixedEntity)
+                                    _importLogs.value = _importLogs.value + "🛠️ 已修复: ${stdWord.word}"
+                                }
                             }
+                        } catch (e: Exception) {
+                            LogUtil.logError("SanityCheckFix", "Failed", e)
+                            _importLogs.value = _importLogs.value + "❌ 修复失败: ${e.message}"
                         }
                     }
                 }
