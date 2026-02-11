@@ -24,6 +24,8 @@ import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.google.gson.Gson
+import java.net.URL
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,16 +46,28 @@ fun InitScreen(onInitSuccess: () -> Unit) {
     var isManualMode by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     
+    // UI State for Success
+    var isImportSuccess by remember { mutableStateOf(false) }
+    
     // Local logs for the Init Process (merging with ViewModel logs if needed)
     var logs by remember { mutableStateOf(listOf<String>()) }
     
     // Observe ViewModel logs for Library Import
     val vmLogs by libraryViewModel.importLogs.collectAsState()
+    val isImporting by libraryViewModel.isImporting.collectAsState()
     
     // Merge logs
     val displayLogs = logs + vmLogs
 
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    // Auto-scroll logs
+    LaunchedEffect(displayLogs.size) {
+        if (displayLogs.isNotEmpty()) {
+            listState.animateScrollToItem(displayLogs.size - 1)
+        }
+    }
 
     fun addLog(msg: String) {
         logs = logs + msg
@@ -92,79 +106,98 @@ fun InitScreen(onInitSuccess: () -> Unit) {
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Button(
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            logs = emptyList() // Clear previous
-                            addLog("🚀 开始连接服务器: $serverUrl")
-                            
-                            try {
-                                // Create transient Retrofit client
-                                val cleanUrl = if (serverUrl.endsWith("/")) serverUrl else "$serverUrl/"
-                                val retrofit = Retrofit.Builder()
-                                    .baseUrl(cleanUrl)
-                                    .addConverterFactory(GsonConverterFactory.create())
-                                    .build()
+                if (isImportSuccess) {
+                    // Show "Enter App" button ONLY if success
+                    Button(
+                        onClick = { onInitSuccess() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("✅ 初始化成功，进入 App")
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isLoading = true
+                                isImportSuccess = false
+                                logs = emptyList() // Clear previous
+                                addLog("🚀 开始连接服务器: $serverUrl")
                                 
-                                val api = retrofit.create(ServerApi::class.java)
-                                
-                                addLog("📥 正在获取配置...")
-                                val config = api.getInitConfig()
-                                addLog("✅ 获取成功!")
-                                addLog("API Key: ${config.apiKey.take(10)}***")
-                                addLog("Model: ${config.modelName}")
-                                addLog("默认词库: ${config.defaultLibrary.size} 个单词")
-                                
-                                // Save Config
-                                AppConfig.saveConfig(config.apiKey, config.modelName, serverUrl)
-                                addLog("💾 配置已保存")
-                                
-                                // Import Library if exists
-                                if (config.defaultLibrary.isNotEmpty()) {
-                                    addLog("📚 正在导入默认词库...")
-                                    // Convert list to JSON string for ViewModel (or add a direct list import method to VM)
-                                    // Using JSON for consistency with existing method
-                                    val json = Gson().toJson(config.defaultLibrary)
-                                    libraryViewModel.importLibraryJson(json)
-                                    // Wait for import to finish? 
-                                    // libraryViewModel.importLibraryJson launches a coroutine. 
-                                    // We can observe isImporting but here we just wait a bit or trust the flow.
-                                    // Better: wait for isImporting to become false?
-                                    // Simple approach: The VM logs will show progress.
-                                    // We can just set a delay or "Done" button.
-                                    // But user wants auto entry? "Fetch... success -> enter"
+                                try {
+                                    // Create transient Retrofit client
+                                    val cleanUrl = if (serverUrl.endsWith("/")) serverUrl else "$serverUrl/"
+                                    val retrofit = Retrofit.Builder()
+                                        .baseUrl(cleanUrl)
+                                        .addConverterFactory(GsonConverterFactory.create())
+                                        .build()
                                     
-                                    // Let's verify import success by checking logs or DB?
-                                    // For now, let's assume success if no exception.
-                                    addLog("⏳ 导入任务已提交，请等待日志完成...")
-                                } else {
-                                    addLog("ℹ️ 默认词库为空，跳过导入")
+                                    val api = retrofit.create(ServerApi::class.java)
+                                    
+                                    addLog("📥 正在获取配置...")
+                                    val config = api.getInitConfig()
+                                    addLog("✅ 获取成功!")
+                                    addLog("API Key: ${config.apiKey.take(10)}***")
+                                    addLog("Model: ${config.modelName}")
+                                    
+                                    // Save Config
+                                    AppConfig.saveConfig(config.apiKey, config.modelName, serverUrl)
+                                    addLog("💾 配置已保存")
+                                    
+                                    // Import Library if URL exists
+                                    if (!config.defaultLibraryUrl.isNullOrBlank()) {
+                                        addLog("📚 发现默认词库链接: ${config.defaultLibraryUrl}")
+                                        addLog("⬇️ 正在下载词库文件...")
+                                        
+                                        // Download File
+                                        val jsonContent = withContext(Dispatchers.IO) {
+                                            try {
+                                                URL(config.defaultLibraryUrl).readText()
+                                            } catch (e: Exception) {
+                                                throw Exception("下载失败: ${e.message}")
+                                            }
+                                        }
+                                        
+                                        addLog("✅ 下载完成，大小: ${jsonContent.length} bytes")
+                                        addLog("🚀 开始导入词库...")
+                                        
+                                        // Trigger Import
+                                        libraryViewModel.importLibraryJson(jsonContent)
+                                        
+                                        // Wait for import to complete
+                                        while (libraryViewModel.isImporting.value) {
+                                            kotlinx.coroutines.delay(500)
+                                        }
+                                        addLog("✨ 词库处理完毕")
+                                    } else {
+                                        addLog("ℹ️ 未配置默认词库，跳过导入")
+                                    }
+                                    
+                                    // Mark as success to show button
+                                    isImportSuccess = true
+                                    addLog("🎉 全部流程完成！请点击上方按钮进入 App")
+                                    
+                                } catch (e: Exception) {
+                                    addLog("❌ 失败: ${e.localizedMessage}")
+                                    e.printStackTrace()
+                                } finally {
+                                    isLoading = false
                                 }
-                                
-                                // Allow user to proceed
-                                addLog("✨ 初始化完成！即将进入主界面...")
-                                kotlinx.coroutines.delay(2000)
-                                onInitSuccess()
-                                
-                            } catch (e: Exception) {
-                                addLog("❌ 初始化失败: ${e.localizedMessage}")
-                                e.printStackTrace()
-                            } finally {
-                                isLoading = false
                             }
-                        }
-                    },
-                    enabled = !isLoading && serverUrl.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    else Text("获取配置并初始化")
+                        },
+                        enabled = !isLoading && serverUrl.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Text("获取配置并初始化")
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
-                TextButton(onClick = { isManualMode = true }) {
-                    Text("手动导入配置 >")
+                if (!isImportSuccess && !isLoading) {
+                    TextButton(onClick = { isManualMode = true }) {
+                        Text("手动导入配置 >")
+                    }
                 }
             } else {
                 // Manual Mode
@@ -217,11 +250,10 @@ fun InitScreen(onInitSuccess: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 LazyColumn(
-                    contentPadding = PaddingValues(8.dp),
-                    reverseLayout = true // Show newest at bottom? Actually list adds to end, so reverseLayout=true shows end at bottom usually if we reverse list.
-                    // Let's just show standard list.
+                    state = listState,
+                    contentPadding = PaddingValues(8.dp)
                 ) {
-                    items(displayLogs.reversed()) { log -> // Show newest at top
+                    items(displayLogs) { log -> 
                         Text(log, style = MaterialTheme.typography.bodySmall, fontSize = 12.sp)
                         Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
                     }

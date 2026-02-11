@@ -7,7 +7,7 @@ import com.magicword.app.data.Word
 data class ServerInitConfig(
     @SerializedName("api_key") val apiKey: String,
     @SerializedName("model_name") val modelName: String,
-    @SerializedName("default_library") val defaultLibrary: List<Word>
+    @SerializedName("default_library_url") val defaultLibraryUrl: String?
 )
 
 interface ServerApi {
