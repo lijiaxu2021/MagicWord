@@ -18,42 +18,32 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import com.magicword.app.worker.SyncWorker
 import java.util.concurrent.TimeUnit
 
+import com.magicword.app.utils.AppConfig
+import com.magicword.app.ui.InitScreen
+import androidx.compose.runtime.*
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogUtil.init(this)
-        
-        // Trigger Sync on App Start and Periodic (DISABLED temporarily)
-        /*
-        try {
-            // Background sync (robust, 15m)
-            val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()
-            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "MagicWordSync",
-                ExistingPeriodicWorkPolicy.KEEP,
-                syncRequest
-            )
-            
-            // Immediate sync on start
-            WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
-            
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        */
-
-        // Active Sync Loop (While App is Open)
-        // Ideally this should be in a Service or ViewModel, but MainScreen is root.
-        // We can launch it in MainScreen or here.
+        AppConfig.init(this) // Initialize Config
         
         setContent {
             EasyWordTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    // Check if Configured
+                    var isConfigured by remember { mutableStateOf(AppConfig.isConfigured()) }
+                    
+                    if (isConfigured) {
+                        MainScreen()
+                    } else {
+                        InitScreen(onInitSuccess = {
+                            isConfigured = true
+                        })
+                    }
                 }
             }
         }

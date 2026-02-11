@@ -57,6 +57,7 @@ object LogUtil {
     fun isLogEnabled(): Boolean = isLogEnabled
 
     fun d(tag: String, msg: String) = log("DEBUG", tag, msg)
+    fun logDebug(tag: String, msg: String) = d(tag, msg) // Alias
     fun i(tag: String, msg: String) = log("INFO", tag, msg)
     fun w(tag: String, msg: String) = log("WARN", tag, msg)
     fun e(tag: String, msg: String, tr: Throwable? = null) = log("ERROR", tag, msg + (tr?.let { "\n${Log.getStackTraceString(it)}" } ?: ""))

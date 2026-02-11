@@ -46,6 +46,8 @@ import kotlin.math.max
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 
+import com.magicword.app.utils.AppConfig
+
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     // ... (existing code)
 
@@ -253,7 +255,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         """.trimIndent()
 
         val request = AiRequest(
-            model = "Qwen/Qwen2.5-7B-Instruct",
+            model = AppConfig.modelName,
             messages = listOf(Message("user", prompt)),
             temperature = 0.3
         )
@@ -636,7 +638,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 """.trimIndent()
 
                 val extractRequest = AiRequest(
-                    model = "Qwen/Qwen2.5-7B-Instruct",
+                    model = AppConfig.modelName,
                     messages = listOf(Message("user", extractPrompt)),
                     temperature = 0.1
                 )
@@ -780,7 +782,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
         """.trimIndent()
 
         val chunkRequest = AiRequest(
-            model = "Qwen/Qwen2.5-7B-Instruct",
+            model = AppConfig.modelName,
             messages = listOf(Message("user", chunkPrompt)),
             temperature = 0.3
         )
@@ -885,7 +887,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             """.trimIndent()
             
             val request = AiRequest(
-                model = "Qwen/Qwen2.5-7B-Instruct",
+                model = AppConfig.modelName,
                 messages = listOf(Message("user", checkPrompt)),
                 temperature = 0.1
             )
