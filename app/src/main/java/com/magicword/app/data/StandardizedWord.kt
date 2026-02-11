@@ -48,10 +48,13 @@ data class SenseItem(
  * Concatenates valid senses into a single definition string.
  */
 fun StandardizedWord.toEntity(libraryId: Int, example: String? = null, memoryMethod: String? = null, definitionEn: String? = null): Word {
-    val validSenses = listOfNotNull(
-        senses.sense1, senses.sense2, senses.sense3, senses.sense4, senses.sense5,
-        senses.sense6, senses.sense7, senses.sense8, senses.sense9, senses.sense10
-    )
+    // Safety check: senses can be null if AI returns broken JSON
+    val validSenses = if (senses != null) {
+        listOfNotNull(
+            senses.sense1, senses.sense2, senses.sense3, senses.sense4, senses.sense5,
+            senses.sense6, senses.sense7, senses.sense8, senses.sense9, senses.sense10
+        )
+    } else emptyList()
     
     // Format: "n. 含义1; v. 含义2"
     val combinedDefinition = validSenses.joinToString("; ") { "${it.pos}. ${it.meaning}" }

@@ -74,6 +74,9 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Global Search State
     val globalSearchResult by viewModel.globalSearchResult.collectAsState()
     val isGlobalSearching by viewModel.isGlobalSearching.collectAsState()
+    
+    // Declare pagerState earlier so it can be used in globalSearchResult logic
+    val pagerState = rememberPagerState(pageCount = { words.size })
 
     if (isGlobalSearching) {
         Dialog(onDismissRequest = {}) {
@@ -82,17 +85,38 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     }
 
     if (globalSearchResult != null) {
-        Dialog(
-            onDismissRequest = { viewModel.clearGlobalSearchResult() },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-             Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
-                 WordCard(word = globalSearchResult!!, onEditClick = { editingWord = globalSearchResult })
-                 IconButton(
-                     onClick = { viewModel.clearGlobalSearchResult() },
-                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-                 ) {
-                     Icon(Icons.Default.Close, "Close")
+        // Automatically navigate to the found word's card position instead of showing a dialog
+        // Find the index of the found word in the current list
+        // Note: globalSearchResult might be in a different library. 
+        // If so, we should switch library first? 
+        // Logic: findWordGlobal finds word across ALL libraries.
+        // If found, we want to jump to it.
+        
+        val foundWord = globalSearchResult!!
+        val foundLibId = foundWord.libraryId
+        
+        LaunchedEffect(foundWord) {
+            // 1. Switch Library if needed
+            if (foundLibId != currentLibraryId) {
+                viewModel.switchLibrary(foundLibId)
+            }
+            
+            // 2. Wait for words to update (reactively) and find index
+            // Since we can't easily "wait" here without complex logic, we rely on the list update.
+            // But we can try to find it in the *next* composition or use a side effect.
+            // Actually, if we switch library, `words` will update.
+            // We need to trigger the scroll AFTER `words` contains `foundWord`.
+        }
+        
+        // Use a separate effect to scroll once the word is present in the list
+        LaunchedEffect(words, foundWord) {
+             if (words.any { it.id == foundWord.id }) {
+                 val index = words.indexOfFirst { it.id == foundWord.id }
+                 if (index != -1) {
+                     // Switch to Card Mode and Scroll
+                     isListMode = false
+                     pagerState.scrollToPage(index)
+                     viewModel.clearGlobalSearchResult() // Clear state after navigation
                  }
              }
         }
@@ -114,7 +138,6 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         viewModel.updateWords(updatedList)
     }
 
-    val pagerState = rememberPagerState(pageCount = { words.size })
     val scope = rememberCoroutineScope()
     
     // Auto-scroll when dragging near edges

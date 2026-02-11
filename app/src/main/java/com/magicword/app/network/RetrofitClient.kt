@@ -8,6 +8,8 @@ import java.util.concurrent.TimeUnit
 
 import com.magicword.app.utils.AppConfig
 
+import com.google.gson.GsonBuilder
+
 object RetrofitClient {
     private const val BASE_URL = "https://api.siliconflow.cn/v1/"
 
@@ -25,11 +27,16 @@ object RetrofitClient {
         }
         .build()
 
+    // Use lenient Gson to handle potential malformed JSON from AI
+    private val gson = GsonBuilder()
+        .setLenient()
+        .create()
+
     val api: SiliconFlowApi by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(SiliconFlowApi::class.java)
     }
