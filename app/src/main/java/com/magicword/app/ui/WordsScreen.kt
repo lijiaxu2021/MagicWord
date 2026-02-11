@@ -101,15 +101,16 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             }
         }
         
+        // Use a persistent index to scroll
+        var targetIndex by remember { mutableIntStateOf(-1) }
+        
         LaunchedEffect(words, foundWord) {
-             if (words.any { it.id == foundWord.id }) {
-                 val index = words.indexOfFirst { it.id == foundWord.id }
-                 if (index != -1) {
-                     isListMode = false
-                     pagerState.scrollToPage(index)
-                     viewModel.clearGlobalSearchResult()
-                     // Keep isNavigatingFromSearch true until next composition/effect
-                 }
+             val index = words.indexOfFirst { it.id == foundWord.id }
+             if (index != -1) {
+                 targetIndex = index
+                 isListMode = false
+                 pagerState.scrollToPage(index)
+                 viewModel.clearGlobalSearchResult()
              }
         }
     }
@@ -370,20 +371,21 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                 }
             } else {
                 // CARD MODE CONTENT
-                LaunchedEffect(currentLibraryId, words) {
-                    if (words.isNotEmpty()) {
-                        if (!isNavigatingFromSearch) {
-                            val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
-                            if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
-                                pagerState.scrollToPage(lastIndex)
-                            }
-                        } else {
-                            // If this triggered because of search navigation (e.g. library switch), we skip restore.
-                            // Reset flag for future normal library switches.
-                            isNavigatingFromSearch = false
-                        }
-                    }
+    LaunchedEffect(currentLibraryId, words) {
+        if (words.isNotEmpty()) {
+            if (!isNavigatingFromSearch) {
+                // Check if we have a saved index
+                val lastIndex = viewModel.getInitialLastIndex(currentLibraryId)
+                if (lastIndex in words.indices && pagerState.currentPage != lastIndex) {
+                    pagerState.scrollToPage(lastIndex)
                 }
+            } else {
+                // If this triggered because of search navigation (e.g. library switch), we skip restore.
+                // Reset flag for future normal library switches.
+                isNavigatingFromSearch = false
+            }
+        }
+    }
                 
                 LaunchedEffect(pagerState.currentPage) {
                     viewModel.updateLibraryLastIndex(currentLibraryId, pagerState.currentPage)
