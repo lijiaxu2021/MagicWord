@@ -17,3 +17,5 @@ local.properties
 .idea
 *.jks
 *.keystore
+
+keystore_b64.txt

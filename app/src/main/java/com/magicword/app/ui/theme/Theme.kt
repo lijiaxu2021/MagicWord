@@ -1,6 +1,7 @@
 package com.magicword.app.ui.theme
 
 import android.app.Activity
+
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,20 +12,35 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = KraftPaperYellow,
+    secondary = KraftPaperAccent,
+    tertiary = KraftPaperDark,
+    background = Color(0xFF3E2723), // Dark Brown Background
+    surface = Color(0xFF4E342E),    // Dark Brown Surface
+    onPrimary = KraftPaperDark,
+    onSecondary = KraftPaperDark,
+    onTertiary = KraftPaperYellow,
+    onBackground = KraftPaperYellow,
+    onSurface = KraftPaperYellow,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = KraftPaperDark,
+    secondary = KraftPaperText,
+    tertiary = KraftPaperAccent,
+    background = KraftPaperYellow,
+    surface = Color(0xFFF5F5DC), // Beige Surface (slightly lighter than background)
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = KraftPaperText,
+    onBackground = KraftPaperText,
+    onSurface = KraftPaperText,
 )
 
 @Composable
