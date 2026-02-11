@@ -107,7 +107,15 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
 
     // Study Library Selection (Multiple)
     // Default to current library initially, or user can select multiple
-    private val _studyLibraryIds = MutableStateFlow<Set<Int>>(emptySet())
+    // Initialize from Prefs if available
+    private val _studyLibraryIds = MutableStateFlow<Set<Int>>(
+        try {
+            val saved = prefs.getStringSet("study_library_ids", null)
+            saved?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
+        } catch (e: Exception) {
+            emptySet()
+        }
+    )
     val studyLibraryIds: StateFlow<Set<Int>> = _studyLibraryIds.asStateFlow()
 
     fun toggleStudyLibrary(libraryId: Int) {
@@ -118,10 +126,30 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             current.add(libraryId)
         }
         _studyLibraryIds.value = current
+        saveStudyLibraryIds(current)
     }
     
     fun setStudyLibraries(ids: Set<Int>) {
         _studyLibraryIds.value = ids
+        saveStudyLibraryIds(ids)
+    }
+    
+    private fun saveStudyLibraryIds(ids: Set<Int>) {
+        prefs.edit().putStringSet("study_library_ids", ids.map { it.toString() }.toSet()).apply()
+    }
+    
+    fun renameLibrary(libraryId: Int, newName: String) {
+        viewModelScope.launch {
+            // Check if exists? Dao might need a method or we fetch first.
+            // Just update.
+            // Need to add updateLibraryName to DAO.
+            // Assuming we will add updateLibraryName(id, name) to DAO.
+            // For now, let's implement updateLibraryName via raw query or @Update if we fetch object.
+            val library = wordDao.getLibraryById(libraryId)
+            if (library != null) {
+                wordDao.insertLibrary(library.copy(name = newName)) // Replace because @Insert(onConflict=REPLACE)
+            }
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -438,7 +466,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         exportPackage.libraries.forEach { libData ->
                             // Create new library to avoid conflicts
                             val newLib = Library(
-                                name = libData.name + " (Imported)",
+                                name = libData.name, // Removed " (Imported)" suffix
                                 description = libData.description
                             )
                             val newLibId = wordDao.insertLibrary(newLib).toInt()
@@ -544,15 +572,10 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 // For now, simple loop is stable. To increase speed, we can launch parallel coroutines for chunks.
                 // LIMIT CONCURRENCY to 3
                 
-                // Let's stick to sequential for stability first as per user "high failure rate" complaint.
-                // User said "efficiency low". We can try parallel.
-                // But parallel + timeout might cause more issues on weak network.
-                // Let's keep sequential but ensure chunk size is small (3).
-                // Actually, if we use async, we can process 2 chunks at a time.
-                
+                // Increase concurrency to 3
                 while (chunkQueue.isNotEmpty()) {
-                    // Take up to 2 chunks to process in parallel
-                    val batch = (1..2).mapNotNull { if (chunkQueue.isNotEmpty()) chunkQueue.pollFirst() else null }
+                    // Take up to 3 chunks to process in parallel
+                    val batch = (1..3).mapNotNull { if (chunkQueue.isNotEmpty()) chunkQueue.pollFirst() else null }
                     
                     if (batch.isEmpty()) break
                     
