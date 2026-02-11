@@ -60,6 +60,7 @@ object LogUtil {
     fun i(tag: String, msg: String) = log("INFO", tag, msg)
     fun w(tag: String, msg: String) = log("WARN", tag, msg)
     fun e(tag: String, msg: String, tr: Throwable? = null) = log("ERROR", tag, msg + (tr?.let { "\n${Log.getStackTraceString(it)}" } ?: ""))
+    fun logError(tag: String, msg: String, tr: Throwable? = null) = e(tag, msg, tr) // Alias for clearer intent
 
     fun logFeature(featureName: String, status: String, extraJson: String = "{}") {
         if (!isLogEnabled) return

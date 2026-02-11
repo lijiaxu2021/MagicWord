@@ -38,6 +38,7 @@ import com.magicword.app.data.StandardizedWord
 import com.magicword.app.data.toEntity
 import com.magicword.app.data.LibraryExportData
 import com.magicword.app.data.ExportPackage
+import com.magicword.app.utils.LogUtil
 
 import kotlin.math.roundToInt
 import kotlin.math.max
@@ -486,7 +487,7 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 _importLogs.value = _importLogs.value + "✅ 提取到 ${wordsList.size} 个单词: $wordsList"
 
                 // Step B: Process in chunks with Retry Queue
-                val chunkSize = 5
+                val chunkSize = 3 // Reduced chunk size to prevent timeout
                 // Queue holds Pair<List<String>, Int> where Int is retryCount
                 val chunkQueue = ArrayDeque(wordsList.chunked(chunkSize).map { it to 0 })
                 val maxRetries = 3
@@ -604,6 +605,9 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                         } else {
                             _importLogs.value = _importLogs.value + "❌ 本批次彻底失败，放弃: $chunk"
                         }
+                        // Log full error for debugging
+                        LogUtil.logError("ImportChunk", "Failed", e)
+                        _importLogs.value = _importLogs.value + "🔍 错误详情: ${e.message}"
                     }
                 }
                 
