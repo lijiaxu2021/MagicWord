@@ -22,20 +22,21 @@ android {
         }
     }
 
-    // signingConfigs {
-    //    create("release") {
-    //        // Use standard debug keystore for consistent signing across debug/release builds
-    //        // This allows installing updates without uninstalling previous versions
-    //        storeFile = rootProject.file("app/debug.keystore")
-    //        storePassword = "android"
-    //        keyAlias = "androiddebugkey"
-    //        keyPassword = "android"
-    //    }
-    // }
+    signingConfigs {
+        create("release") {
+            // CI/CD: Keystore file is decoded from secret to 'app/release.jks' or 'release.jks'
+            // We check for environment variables first (CI), then fallback to local properties or defaults
+            val keystorePath = System.getenv("KEYSTORE_PATH") ?: "release.jks"
+            storeFile = file(keystorePath)
+            storePassword = System.getenv("STORE_PASSWORD") ?: "password"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "alias"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "password"
+        }
+    }
 
     buildTypes {
         release {
-            // signingConfig = signingConfigs.getByName("release") // Enable consistent signing
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

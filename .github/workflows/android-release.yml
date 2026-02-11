@@ -28,8 +28,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PATH: release.jks
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
 
       - name: Get current date
         id: date
@@ -39,10 +50,10 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: dev-${{ steps.date.outputs.date }}-${{ github.run_number }}
-          name: Dev Build ${{ steps.date.outputs.date }}
+          tag_name: release-${{ steps.date.outputs.date }}-${{ github.run_number }}
+          name: Release Build ${{ steps.date.outputs.date }}
           draft: false
-          prerelease: true
-          files: app/build/outputs/apk/debug/app-debug.apk
+          prerelease: false
+          files: app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
