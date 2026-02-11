@@ -317,7 +317,7 @@ fun StatItem(label: String, value: String, valueColor: Color = MaterialTheme.col
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall, // Reduced from bodyMedium
             fontWeight = FontWeight.Medium,
             color = valueColor
         )

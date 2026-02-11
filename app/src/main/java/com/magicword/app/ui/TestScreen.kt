@@ -497,7 +497,7 @@ fun QuizChoiceMode(
             // Question area
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.4f) // Reduced weight to share space with options
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
@@ -513,6 +513,7 @@ fun QuizChoiceMode(
             // Options area
             Column(
                 modifier = Modifier
+                    .weight(0.6f) // Give options explicit weight to ensure visibility
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
@@ -547,7 +548,7 @@ fun QuizChoiceMode(
                                 ))
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), // Reduced padding
                         colors = buttonColors,
                         enabled = !isAnswered // Disable clicks after answering
                     ) {
@@ -556,8 +557,8 @@ fun QuizChoiceMode(
                             Text(
                                 text = option.definitionCn, 
                                 modifier = Modifier.weight(1f).padding(8.dp),
-                                maxLines = 2, // Limit lines to prevent too tall buttons
-                                style = MaterialTheme.typography.bodyLarge
+                                // maxLines removed to prevent cutting off
+                                style = MaterialTheme.typography.bodyMedium // Reduced font size
                             )
                             if (isAnswered) {
                                 if (isCorrect) {

@@ -752,24 +752,9 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 
                 // ... (Step C remains same)
                 
-                // Step C: Verification and Retry for Missing Words
-                val missingWords = wordsList.filter { !importedWordsSet.contains(it.lowercase().trim()) }
-                
-                if (missingWords.isNotEmpty()) {
-                    _importLogs.value = _importLogs.value + "🔍 发现 ${missingWords.size} 个单词漏导，正在尝试重新处理..."
-                    
-                    // Re-queue missing words as new chunks
-                    val missingChunks = missingWords.chunked(chunkSize).map { it to 0 } // Reset retry count
-                    chunkQueue.addAll(missingChunks)
-                    
-                    // Process Retry Queue for Missing Words
-                    // Sequential for retry to be safe
-                    while (chunkQueue.isNotEmpty()) {
-                        val (chunk, retryCount) = chunkQueue.pollFirst()!!
-                        _importLogs.value = _importLogs.value + "Step C: 补录漏词 (剩余批次: ${chunkQueue.size})..."
-                        processChunk(chunk, retryCount, maxRetries, chunkQueue, importedWordsSet)
-                    }
-                }
+                // Step C: Verification and Retry for Missing Words (Removed per user request)
+                // User logic: Trust the initial extraction. Re-verification causes duplicates/false positives.
+                // LogUtil.logFeature("Import", "SkipVerification", "Skipped Step C")
 
                 // Step D: Post-Import Sanity Check & Fix
                 // Gather all imported words in this session for validation
