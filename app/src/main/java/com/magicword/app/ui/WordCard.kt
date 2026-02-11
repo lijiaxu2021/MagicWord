@@ -47,11 +47,14 @@ import androidx.compose.ui.graphics.Color
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
+import androidx.compose.material.icons.filled.VolumeUp
+
 @Composable
 fun WordCard(
     word: Word,
     modifier: Modifier = Modifier,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onSpeakClick: () -> Unit
 ) {
     var isFlipped by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
@@ -89,6 +92,10 @@ fun WordCard(
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.secondary
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        IconButton(onClick = { onSpeakClick() }) {
+                            Icon(Icons.Default.VolumeUp, "Speak", tint = MaterialTheme.colorScheme.primary)
+                        }
                     }
                     Spacer(modifier = Modifier.height(32.dp))
                     Text(
@@ -107,7 +114,7 @@ fun WordCard(
                         rotationY = 180f
                     }
             ) {
-                WordDetailContent(word = word)
+                WordDetailContent(word = word, onSpeakClick = onSpeakClick)
                 
                 // Edit Button on the back (Top Right)
                 IconButton(
@@ -122,7 +129,7 @@ fun WordCard(
 }
 
 @Composable
-fun WordDetailContent(word: Word) {
+fun WordDetailContent(word: Word, onSpeakClick: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .padding(24.dp)
@@ -130,12 +137,17 @@ fun WordDetailContent(word: Word) {
     ) {
         // ... (Header and Definition parts remain same)
         // Header: Word + Phonetic
-        Text(
-            text = word.word,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = word.word,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            IconButton(onClick = onSpeakClick) {
+                Icon(Icons.Default.VolumeUp, "Speak", tint = MaterialTheme.colorScheme.primary)
+            }
+        }
         
         if (!word.phonetic.isNullOrBlank()) {
             Text(

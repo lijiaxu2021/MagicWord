@@ -27,6 +27,7 @@ import java.util.Locale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -44,6 +45,11 @@ fun StudyScreen() {
         factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
     
+    // Init TTS
+    LaunchedEffect(Unit) {
+        viewModel.initTts(context)
+    }
+
     val dueWords by viewModel.dueWords.collectAsState(initial = emptyList())
     val allLibraries by viewModel.allLibraries.collectAsState(initial = emptyList())
     val studyLibraryIds by viewModel.studyLibraryIds.collectAsState()
@@ -266,12 +272,18 @@ fun StudyScreen() {
                                 textAlign = TextAlign.Center
                             )
                             if (currentWord.phonetic != null) {
-                                Text(
-                                    text = currentWord.phonetic,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically, 
+                                    modifier = Modifier.padding(top = 8.dp).clickable { viewModel.speak(currentWord.word) }
+                                ) {
+                                    Icon(Icons.Default.VolumeUp, "Speak", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = currentWord.phonetic,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
                             }
                             
                             Spacer(modifier = Modifier.height(32.dp))

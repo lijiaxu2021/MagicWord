@@ -54,6 +54,12 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     val viewModel: LibraryViewModel = viewModel(
         factory = LibraryViewModelFactory(database.wordDao(), prefs)
     )
+    
+    // Init TTS
+    LaunchedEffect(Unit) {
+        viewModel.initTts(context)
+    }
+    
     val words by viewModel.allWords.collectAsState(initial = emptyList())
     // Create a mutable state list for reordering to work smoothly in UI before DB update
     var reorderableWords by remember { mutableStateOf(words) }
@@ -503,7 +509,8 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                             ) {
                                 WordCard(
                                     word = word,
-                                    onEditClick = { editingWord = word }
+                                    onEditClick = { editingWord = word },
+                                    onSpeakClick = { viewModel.speak(word.word) }
                                 )
                             }
                         }
@@ -646,7 +653,8 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             onSave = { updatedWord ->
                 viewModel.updateWord(updatedWord)
                 editingWord = null
-            }
+            },
+            onSpeak = { viewModel.speak(it) }
         )
     }
     

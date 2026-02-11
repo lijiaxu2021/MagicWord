@@ -13,13 +13,19 @@ import com.magicword.app.data.Word
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WordDetailEditDialog(
     word: Word,
     onDismiss: () -> Unit,
-    onSave: (Word) -> Unit
+    onSave: (Word) -> Unit,
+    onSpeak: (String) -> Unit = {}
 ) {
     var isEditing by remember { mutableStateOf(false) }
     
@@ -37,7 +43,12 @@ fun WordDetailEditDialog(
         title = {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    Text(word.word, style = MaterialTheme.typography.headlineMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(word.word, style = MaterialTheme.typography.headlineMedium)
+                        IconButton(onClick = { onSpeak(word.word) }) {
+                            Icon(Icons.Default.VolumeUp, "Speak", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                     if (!word.phonetic.isNullOrBlank()) {
                         Text(word.phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
                     }

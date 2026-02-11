@@ -48,7 +48,47 @@ import kotlinx.coroutines.awaitAll
 
 import com.magicword.app.utils.AppConfig
 
+import android.speech.tts.TextToSpeech
+import java.util.Locale
+
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
+    
+    // TTS Engine
+    private var tts: TextToSpeech? = null
+    private val _isTtsReady = MutableStateFlow(false)
+    val isTtsReady: StateFlow<Boolean> = _isTtsReady.asStateFlow()
+
+    fun initTts(context: Context) {
+        if (tts == null) {
+            tts = TextToSpeech(context.applicationContext) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    val result = tts?.setLanguage(Locale.US)
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        LogUtil.logError("TTS", "Language Missing/Not Supported", null)
+                        _isTtsReady.value = false
+                    } else {
+                        _isTtsReady.value = true
+                    }
+                } else {
+                    LogUtil.logError("TTS", "Initialization Failed", null)
+                    _isTtsReady.value = false
+                }
+            }
+        }
+    }
+    
+    fun speak(text: String) {
+        if (_isTtsReady.value && text.isNotBlank()) {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        tts?.stop()
+        tts?.shutdown()
+    }
+
     // ... (existing code)
 
     // SM-2 Algorithm Implementation
