@@ -270,13 +270,6 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                         actions = {
                         // Action buttons based on mode
                         if (isListMode) {
-                            // Bulk Import (Moved to ensure no overlap and better UI)
-                            TextButton(onClick = { showImportSheet = true }) {
-                                Icon(Icons.Default.Add, "Import", modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("导入")
-                            }
-                            
                             // Test/Delete Selected
                             if (selectedWords.isNotEmpty()) {
                                 var showTestTypeDialog by remember { mutableStateOf(false) }
@@ -365,6 +358,17 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                             viewModel.handleGlobalSearch(searchQuery)
                         }
                     )
+                )
+            }
+        },
+        floatingActionButton = {
+            if (isListMode) {
+                ExtendedFloatingActionButton(
+                    onClick = { showImportSheet = true },
+                    icon = { Icon(Icons.Default.Add, "Import") },
+                    text = { Text("导入") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
