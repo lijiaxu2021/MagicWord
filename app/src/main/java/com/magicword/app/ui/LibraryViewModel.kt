@@ -622,8 +622,15 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             try {
                 // Step A: Extract words using AI
                 val extractPrompt = """
-                    Identify and extract all unique English words from the following text that are suitable for learning (ignore common stop words like 'the', 'is', 'and', etc.). 
-                    Return ONLY a JSON Array of strings. Example: ["apple", "banana", "cherry"]
+                    Identify and extract all unique English words AND phrases from the following text that are suitable for learning (ignore common stop words like 'the', 'is', 'and', etc. unless they are part of a useful phrase). 
+                    
+                    CRITICAL INSTRUCTION FOR PHRASES:
+                    If the text contains a phrase (e.g., "give up", "look forward to"), you MUST:
+                    1. Extract the phrase itself as a single entry (e.g., "give up").
+                    2. Extract the constituent words individually IF they are meaningful (e.g., "give", "up").
+                    3. Do NOT split a phrase if it means you lose the phrase entry. Prioritize keeping the phrase intact.
+                    
+                    Return ONLY a JSON Array of strings. Example: ["give up", "give", "up", "apple", "banana"]
                     
                     Text: "${text.take(4000)}"
                 """.trimIndent()
