@@ -24,5 +24,10 @@ data class Word(
     val createdAt: Long = System.currentTimeMillis(),
     val correctCount: Int = 0,
     val incorrectCount: Int = 0,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    // SRS Fields
+    val nextReviewTime: Long = 0, // 0 means new/unstudied
+    val easinessFactor: Float = 2.5f,
+    val interval: Int = 0, // Days
+    val repetitions: Int = 0
 )

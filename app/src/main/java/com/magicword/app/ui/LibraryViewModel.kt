@@ -39,9 +39,73 @@ import com.magicword.app.data.toEntity
 import com.magicword.app.data.LibraryExportData
 import com.magicword.app.data.ExportPackage
 
+import kotlin.math.roundToInt
+import kotlin.math.max
+
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
+    // ... (existing code)
+
+    // SM-2 Algorithm Implementation
+    fun processReview(word: Word, quality: Int) { // quality: 0-5 (0=Blackout, 5=Perfect)
+        viewModelScope.launch {
+            // SM-2 Logic
+            // q: 0-5
+            // If q < 3: Repetitions = 0, Interval = 1, EF unchanged (or reduced?)
+            // If q >= 3: 
+            //   Repetitions += 1
+            //   Interval: I(1)=1, I(2)=6, I(n)=I(n-1)*EF
+            //   EF' = EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02))
+            //   EF >= 1.3
+            
+            var newRepetitions = word.repetitions
+            var newInterval = word.interval
+            var newEf = word.easinessFactor
+            
+            if (quality < 3) {
+                newRepetitions = 0
+                newInterval = 1
+            } else {
+                newRepetitions += 1
+                if (newRepetitions == 1) {
+                    newInterval = 1
+                } else if (newRepetitions == 2) {
+                    newInterval = 6
+                } else {
+                    newInterval = (newInterval * newEf).roundToInt()
+                }
+                
+                // Update EF
+                // EF' = EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02))
+                val qFactor = 5 - quality
+                newEf = newEf + (0.1f - qFactor * (0.08f + qFactor * 0.02f))
+                if (newEf < 1.3f) newEf = 1.3f
+            }
+            
+            val nextReview = System.currentTimeMillis() + newInterval * 24L * 60 * 60 * 1000
+            
+            val updatedWord = word.copy(
+                repetitions = newRepetitions,
+                interval = newInterval,
+                easinessFactor = newEf,
+                nextReviewTime = nextReview,
+                lastReviewTime = System.currentTimeMillis(),
+                reviewCount = word.reviewCount + 1,
+                correctCount = if (quality >= 3) word.correctCount + 1 else word.correctCount,
+                incorrectCount = if (quality < 3) word.incorrectCount + 1 else word.incorrectCount
+            )
+            
+            wordDao.updateWord(updatedWord)
+        }
+    }
+    
     private val _currentLibraryId = MutableStateFlow(prefs.getInt("current_library_id", 1))
     val currentLibraryId: StateFlow<Int> = _currentLibraryId.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val dueWords: Flow<List<Word>> = _currentLibraryId.flatMapLatest { id ->
+        // Fetch words due before NOW
+        wordDao.getDueWords(id, System.currentTimeMillis())
+    }
 
     // Sorting State
     enum class SortOption {

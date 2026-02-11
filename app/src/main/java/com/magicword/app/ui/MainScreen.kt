@@ -64,6 +64,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.magicword.app.data.AppDatabase
 
+import androidx.compose.material.icons.filled.School
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
@@ -80,35 +82,18 @@ fun MainScreen() {
     val currentLibraryId by viewModel.currentLibraryId.collectAsState()
     val currentLibraryName = libraries.find { it.id == currentLibraryId }?.name ?: "默认词库"
 
-    // 10s Active Sync Loop (DISABLED temporarily)
-    /*
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            while (true) {
-                delay(10000) // 10 seconds
-                try {
-                     LogUtil.logFeature("SyncLoop", "Trigger", "Enqueuing SyncWorker")
-                     WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
-                     // Optional: Log/Toast "Syncing..."
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
-    */
-
     // Bypass Auth for now
     // if (!isLoggedIn) {
     //     AuthScreen(onLoginSuccess = { isLoggedIn = true })
     //     return
     // }
 
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val pagerState = rememberPagerState(pageCount = { 4 }) // Updated count
     val scope = rememberCoroutineScope()
     
     // Navigation items
     val items = listOf(
+        Screen.Study, // New Home Tab
         Screen.Words,
         Screen.Search,
         Screen.Test
@@ -176,9 +161,10 @@ fun MainScreen() {
             ) { page ->
                 SlideInEntry {
                     when (page) {
-                        0 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
-                        1 -> SearchScreen()
-                        2 -> TestScreen()
+                        0 -> StudyScreen() // New Screen
+                        1 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
+                        2 -> SearchScreen()
+                        3 -> TestScreen()
                     }
                 }
             }
@@ -187,7 +173,8 @@ fun MainScreen() {
 }
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    object Words : Screen("words", "单词", Icons.Default.Book)
+    object Study : Screen("study", "学习", Icons.Default.School) // New Screen
+    object Words : Screen("words", "词库", Icons.Default.Book)
     object Search : Screen("search", "搜词", Icons.Default.Search)
     object Test : Screen("test", "测试", Icons.Default.CheckCircle)
 }

@@ -42,6 +42,9 @@ interface WordDao {
     @Query("SELECT * FROM words WHERE libraryId = :libraryId")
     suspend fun getWordsByLibraryList(libraryId: Int): List<Word>
 
+    @Query("SELECT * FROM words WHERE libraryId = :libraryId AND nextReviewTime <= :currentTime ORDER BY nextReviewTime ASC")
+    fun getDueWords(libraryId: Int, currentTime: Long): Flow<List<Word>>
+
     @Query("SELECT * FROM words")
     suspend fun getAllWordsList(): List<Word>
 
