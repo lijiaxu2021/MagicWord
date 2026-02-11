@@ -35,7 +35,12 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -65,6 +70,33 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
     // Search State
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    
+    // Global Search State
+    val globalSearchResult by viewModel.globalSearchResult.collectAsState()
+    val isGlobalSearching by viewModel.isGlobalSearching.collectAsState()
+
+    if (isGlobalSearching) {
+        Dialog(onDismissRequest = {}) {
+            CircularProgressIndicator()
+        }
+    }
+
+    if (globalSearchResult != null) {
+        Dialog(
+            onDismissRequest = { viewModel.clearGlobalSearchResult() },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+             Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
+                 WordCard(word = globalSearchResult!!, onEditClick = { editingWord = globalSearchResult })
+                 IconButton(
+                     onClick = { viewModel.clearGlobalSearchResult() },
+                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                 ) {
+                     Icon(Icons.Default.Close, "Close")
+                 }
+             }
+        }
+    }
     
     // List Selection & Sorting
     var selectedWords by remember { mutableStateOf(setOf<Int>()) }
@@ -227,10 +259,16 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
                                 scope.launch { listState.animateScrollToItem(index) }
                             }
                         },
-                        placeholder = { Text("搜索列表中的单词...") },
+                        placeholder = { Text("搜索 / AI 录入 (Enter)") },
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                viewModel.handleGlobalSearch(searchQuery)
+                            }
+                        )
                     )
 
                     LazyColumn(

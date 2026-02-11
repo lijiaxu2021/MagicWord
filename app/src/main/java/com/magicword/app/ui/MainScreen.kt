@@ -88,14 +88,13 @@ fun MainScreen() {
     //     return
     // }
 
-    val pagerState = rememberPagerState(pageCount = { 4 }) // Updated count
+    val pagerState = rememberPagerState(pageCount = { 3 }) // Updated count
     val scope = rememberCoroutineScope()
     
     // Navigation items
     val items = listOf(
         Screen.Study, // New Home Tab
         Screen.Words,
-        Screen.Search,
         Screen.Test
     )
 
@@ -163,8 +162,7 @@ fun MainScreen() {
                     when (page) {
                         0 -> StudyScreen() // New Screen
                         1 -> WordsScreen(onOpenSettings = { currentOverlay = "settings" })
-                        2 -> SearchScreen()
-                        3 -> TestScreen()
+                        2 -> TestScreen()
                     }
                 }
             }
@@ -175,6 +173,5 @@ fun MainScreen() {
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Study : Screen("study", "学习", Icons.Default.School) // New Screen
     object Words : Screen("words", "词库", Icons.Default.Book)
-    object Search : Screen("search", "搜词", Icons.Default.Search)
     object Test : Screen("test", "测试", Icons.Default.CheckCircle)
 }

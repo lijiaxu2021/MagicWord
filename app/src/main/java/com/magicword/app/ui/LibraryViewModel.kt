@@ -189,6 +189,113 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     private val _searchResults = MutableStateFlow<List<Word>>(emptyList())
     val searchResults: StateFlow<List<Word>> = _searchResults.asStateFlow()
 
+    private val _globalSearchResult = MutableStateFlow<Word?>(null)
+    val globalSearchResult: StateFlow<Word?> = _globalSearchResult.asStateFlow()
+
+    private val _isGlobalSearching = MutableStateFlow(false)
+    val isGlobalSearching: StateFlow<Boolean> = _isGlobalSearching.asStateFlow()
+
+    fun clearGlobalSearchResult() {
+        _globalSearchResult.value = null
+    }
+
+    fun handleGlobalSearch(query: String) {
+        if (query.isBlank()) return
+        
+        viewModelScope.launch {
+            _isGlobalSearching.value = true
+            try {
+                // 1. Global Search (Exact Match)
+                val existing = wordDao.findWordGlobal(query.trim())
+                
+                if (existing != null) {
+                    // Found: Mark as "Forgotten" (Review logic)
+                    // Treat as Quality 0 (Blackout) -> Reset interval, count as review
+                    processReview(existing, 0)
+                    _globalSearchResult.value = existing
+                } else {
+                    // Not Found: AI Import (Single Word)
+                    importSingleWord(query.trim())
+                }
+            } catch (e: Exception) {
+                _importLogs.value = listOf("Search/Import Error: ${e.message}")
+            } finally {
+                _isGlobalSearching.value = false
+            }
+        }
+    }
+
+    private suspend fun importSingleWord(text: String) {
+        // AI Request for Single Word
+        val prompt = """
+            You are a strict JSON data generator. Analyze this English word: "$text"
+            
+            Return a SINGLE JSON Object (NOT Array).
+            
+            STRICT JSON FORMAT RULES:
+            1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run".
+            2. "phonetic": String.
+            3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
+               - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
+               - "pos": String (e.g., "n", "v", "adj").
+               - "meaning": String (Chinese definition).
+            4. "definition_en": String (Brief English definition).
+            5. "example": String. Format: "En sentence. Cn translation."
+            6. "memory_method": String. Escape double quotes inside strings with backslash.
+            7. "forms": Object (Word Variations) or null.
+               - "past": String (Past Tense).
+               - "participle": String (Past Participle).
+               - "plural": String (Plural).
+               - "third_person": String (3rd Person Singular).
+            
+            IMPORTANT: Ensure valid JSON syntax. No trailing commas.
+            NO MARKDOWN. NO COMMENTS. ONLY JSON.
+        """.trimIndent()
+
+        val request = AiRequest(
+            model = "Qwen/Qwen2.5-7B-Instruct",
+            messages = listOf(Message("user", prompt)),
+            temperature = 0.3
+        )
+
+        try {
+            val response = RetrofitClient.api.chat(request)
+            val content = response.choices.first().message.content
+            
+            // Extract JSON Object
+            val jsonStart = content.indexOf('{')
+            val jsonEnd = content.lastIndexOf('}') + 1
+            
+            if (jsonStart != -1 && jsonEnd > jsonStart) {
+                val jsonStr = content.substring(jsonStart, jsonEnd)
+                val stdWord = com.google.gson.Gson().fromJson(jsonStr, StandardizedWord::class.java)
+                
+                // Convert to Entity and Insert
+                // Ensure timestamps are correct (System.currentTimeMillis())
+                val now = System.currentTimeMillis()
+                val wordToSave = stdWord.toEntity(
+                    libraryId = _currentLibraryId.value,
+                    example = stdWord.example,
+                    memoryMethod = stdWord.memoryMethod,
+                    definitionEn = stdWord.definitionEn
+                ).copy(
+                    createdAt = now,
+                    lastReviewTime = 0, // New word, not yet reviewed
+                    reviewCount = 0,
+                    nextReviewTime = 0 // Due immediately
+                )
+                
+                val newId = wordDao.insertWord(wordToSave)
+                _globalSearchResult.value = wordToSave.copy(id = newId.toInt())
+            } else {
+                throw Exception("Invalid AI Response")
+            }
+        } catch (e: Exception) {
+            LogUtil.logError("ImportSingle", "Failed", e)
+            throw e
+        }
+    }
+
     // Search Function
     fun searchWords(query: String) {
         viewModelScope.launch {
