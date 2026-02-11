@@ -73,4 +73,7 @@ interface WordDao {
 
     @Query("DELETE FROM words WHERE libraryId = :libraryId")
     suspend fun deleteWordsByLibrary(libraryId: Int)
+
+    @Query("SELECT * FROM words WHERE word LIKE '%' || :query || '%' OR definitionCn LIKE '%' || :query || '%' OR formsJson LIKE '%' || :query || '%'")
+    fun searchWords(query: String): Flow<List<Word>>
 }

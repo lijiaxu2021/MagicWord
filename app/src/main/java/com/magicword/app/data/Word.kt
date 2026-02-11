@@ -29,5 +29,7 @@ data class Word(
     val nextReviewTime: Long = 0, // 0 means new/unstudied
     val easinessFactor: Float = 2.5f,
     val interval: Int = 0, // Days
-    val repetitions: Int = 0
+    val repetitions: Int = 0,
+    // Word Forms (JSON String: {"past": "...", "participle": "...", "plural": "..."})
+    val formsJson: String? = null
 )

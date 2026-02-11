@@ -1,20 +1,30 @@
 package com.magicword.app.data
 
 import com.google.gson.annotations.SerializedName
+import com.google.gson.Gson
 
 /**
  * Standardized JSON structure for AI response.
  * Strictly enforces 10 explicit sense slots to ensure data completeness.
  */
 data class StandardizedWord(
-    @SerializedName("word") val word: String,
+    @SerializedName("word") val word: String, // The lemma (root form)
     @SerializedName("phonetic") val phonetic: String?,
     @SerializedName("senses") val senses: Senses,
     @SerializedName("definition_en") val definitionEn: String?,
     @SerializedName("example") val example: String?,
-    @SerializedName("memory_method") val memoryMethod: String?
+    @SerializedName("memory_method") val memoryMethod: String?,
+    @SerializedName("forms") val forms: WordForms? // Variations
 )
 
+data class WordForms(
+    @SerializedName("past") val past: String?,
+    @SerializedName("participle") val participle: String?,
+    @SerializedName("plural") val plural: String?,
+    @SerializedName("third_person") val thirdPerson: String?
+)
+
+// ... (Senses and SenseItem remain same)
 data class Senses(
     @SerializedName("sense_1") val sense1: SenseItem?,
     @SerializedName("sense_2") val sense2: SenseItem?,
@@ -46,6 +56,11 @@ fun StandardizedWord.toEntity(libraryId: Int, example: String? = null, memoryMet
     // Format: "n. 含义1; v. 含义2"
     val combinedDefinition = validSenses.joinToString("; ") { "${it.pos}. ${it.meaning}" }
     
+    // Serialize forms to JSON
+    val formsJson = if (this.forms != null) {
+        Gson().toJson(this.forms)
+    } else null
+    
     return Word(
         word = this.word,
         phonetic = this.phonetic,
@@ -53,6 +68,7 @@ fun StandardizedWord.toEntity(libraryId: Int, example: String? = null, memoryMet
         definitionEn = definitionEn ?: "",
         example = example,
         memoryMethod = memoryMethod,
-        libraryId = libraryId
+        libraryId = libraryId,
+        formsJson = formsJson
     )
 }

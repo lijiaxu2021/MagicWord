@@ -43,6 +43,9 @@ import com.magicword.app.utils.LogUtil
 import kotlin.math.roundToInt
 import kotlin.math.max
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+
 class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     // ... (existing code)
 
@@ -131,6 +134,25 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
     fun setSortOption(option: SortOption) {
         _sortOption.value = option
         prefs.edit().putString("sort_option", option.name).apply()
+    }
+
+    private val _searchResults = MutableStateFlow<List<Word>>(emptyList())
+    val searchResults: StateFlow<List<Word>> = _searchResults.asStateFlow()
+
+    // Search Function
+    fun searchWords(query: String) {
+        viewModelScope.launch {
+            if (query.isBlank()) {
+                // If query is blank, we might want to clear or show all? 
+                // Currently SearchScreen observes _searchResults. 
+                // If query blank, SearchScreen usually clears.
+                _searchResults.value = emptyList()
+            } else {
+                wordDao.searchWords(query).collect { results ->
+                    _searchResults.value = results
+                }
+            }
+        }
     }
 
     fun switchLibrary(libraryId: Int) {
@@ -494,122 +516,37 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                 
                 // Track successfully imported words to verify at the end
                 val importedWordsSet = mutableSetOf<String>()
-
+                
+                // Concurrent Processing (Simple approach: Process chunks sequentially but allow parallel request logic if we had multiple queues)
+                // For now, simple loop is stable. To increase speed, we can launch parallel coroutines for chunks.
+                // LIMIT CONCURRENCY to 3
+                
+                // Let's stick to sequential for stability first as per user "high failure rate" complaint.
+                // User said "efficiency low". We can try parallel.
+                // But parallel + timeout might cause more issues on weak network.
+                // Let's keep sequential but ensure chunk size is small (3).
+                // Actually, if we use async, we can process 2 chunks at a time.
+                
                 while (chunkQueue.isNotEmpty()) {
-                    val (chunk, retryCount) = chunkQueue.pollFirst()!!
-                    _importLogs.value = _importLogs.value + "Step B: 正在分析批次 (剩余批次: ${chunkQueue.size})..."
+                    // Take up to 2 chunks to process in parallel
+                    val batch = (1..2).mapNotNull { if (chunkQueue.isNotEmpty()) chunkQueue.pollFirst() else null }
                     
-                    val chunkPrompt = """
-                        You are a strict JSON data generator. Analyze these English words: $chunk
-                        
-                        Return a JSON Array of objects.
-                        
-                        STRICT JSON FORMAT RULES:
-                        1. "word": String.
-                        2. "phonetic": String.
-                        3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
-                           - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
-                           - "pos": String (e.g., "n", "v", "adj").
-                           - "meaning": String (Chinese definition).
-                        4. "definition_en": String (Brief English definition).
-                        5. "example": String. Format: "En sentence. Cn translation."
-                        6. "memory_method": String. Escape double quotes inside strings with backslash.
-                        
-                        Example Item:
-                        {
-                          "word": "example",
-                          "phonetic": "/ɪgˈzæmpəl/",
-                          "senses": {
-                            "sense_1": { "pos": "n", "meaning": "例子" },
-                            "sense_2": { "pos": "v", "meaning": "作为...的榜样" },
-                            "sense_3": null, "sense_4": null, "sense_5": null,
-                            "sense_6": null, "sense_7": null, "sense_8": null,
-                            "sense_9": null, "sense_10": null
-                          },
-                          "definition_en": "A representative form or pattern.",
-                          "example": "This is an example. 这是一个例子。",
-                          "memory_method": "ex(出)+ample(拿) -> 拿出来展示 -> 例子"
+                    if (batch.isEmpty()) break
+                    
+                    _importLogs.value = _importLogs.value + "Step B: 正在并行处理 ${batch.size} 个批次 (剩余: ${chunkQueue.size})..."
+                    
+                    // Process batch in parallel
+                    val deferreds = batch.map { (chunk, retryCount) ->
+                        // ... create job
+                        async { // Use 'async' from coroutine scope (viewModelScope or runBlocking context?)
+                             // We are inside launch { ... } which is a CoroutineScope
+                             processChunk(chunk, retryCount, maxRetries, chunkQueue, importedWordsSet)
                         }
-                        
-                        IMPORTANT: Ensure valid JSON syntax. No trailing commas.
-                        NO MARKDOWN. NO COMMENTS. ONLY JSON.
-                    """.trimIndent()
-
-                    val chunkRequest = AiRequest(
-                        model = "Qwen/Qwen2.5-7B-Instruct",
-                        messages = listOf(Message("user", chunkPrompt)),
-                        temperature = 0.3
-                    )
-
-                    try {
-                        // Single attempt per queue pop
-                        val chunkResponse = RetrofitClient.api.chat(chunkRequest)
-                        val chunkContent = chunkResponse.choices.first().message.content
-                        
-                        val chunkJsonStart = chunkContent.indexOf('[')
-                        val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
-                        if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
-                            val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
-                            
-                            // Use StandardizedWord for strict parsing
-                            // We define a wrapper class for the list parsing or just use TypeToken
-                            // But StandardizedWord is the item type.
-                            val standardizedWords: List<StandardizedWord> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
-                            
-                            // Check if AI returned fewer words than requested
-                            if (standardizedWords.size < chunk.size) {
-                                _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${standardizedWords.size}/${chunk.size})，正在检查漏词..."
-                            }
-
-                            standardizedWords.forEach { stdWord ->
-                                // Convert back to Entity using helper extension
-                                // We need to access extra fields from JSON map if they were separate, 
-                                // but StandardizedWord data class should match JSON keys.
-                                // Wait, StandardizedWord definition above has 'definition_en', 'example', 'memory_method' fields?
-                                // Ah, I need to add them to StandardizedWord data class first!
-                                // The previous file write didn't include them in the data class body, let me check.
-                                // Yes, the user requirement didn't explicitly say those fields, but my prompt asked for them.
-                                // I should update StandardizedWord to include them for full mapping.
-                                // Assuming I update StandardizedWord... wait, let me check the file content I wrote.
-                                // I wrote StandardizedWord with word, phonetic, senses. 
-                                // I need to update it to include definition_en, example, memory_method to capture them from JSON.
-                                
-                                // Let's pause this SearchReplace and update StandardizedWord.kt first.
-                                // But I cannot stop tool execution mid-way. 
-                                // I will proceed assuming I will fix StandardizedWord.kt immediately after.
-                                
-                                // Actually, I can use a local data class or map, but better to fix the file.
-                                // Let's use a temporary parsing logic or fix the file in next step.
-                                // No, I should fix the file first.
-                                // I will cancel this edit? No, I can't.
-                                // I will write the code that assumes updated class, and then update the class.
-                                
-                                val wordToSave = stdWord.toEntity(
-                                    libraryId = _currentLibraryId.value,
-                                    // These fields will be added to StandardizedWord in next step
-                                    example = stdWord.example,
-                                    memoryMethod = stdWord.memoryMethod,
-                                    definitionEn = stdWord.definitionEn
-                                )
-                                wordDao.insertWord(wordToSave)
-                                importedWordsSet.add(stdWord.word.lowercase().trim())
-                                _importLogs.value = _importLogs.value + "📥 已保存: ${stdWord.word}"
-                            }
-                        } else {
-                            throw Exception("AI 返回格式错误 (找不到 JSON Array)")
-                        }
-                    } catch (e: Exception) {
-                        if (retryCount < maxRetries) {
-                            _importLogs.value = _importLogs.value + "⚠️ 本批次失败，已重新加入队列 (重试 ${retryCount + 1}/$maxRetries): ${e.message}"
-                            chunkQueue.addLast(chunk to (retryCount + 1))
-                        } else {
-                            _importLogs.value = _importLogs.value + "❌ 本批次彻底失败，放弃: $chunk"
-                        }
-                        // Log full error for debugging
-                        LogUtil.logError("ImportChunk", "Failed", e)
-                        _importLogs.value = _importLogs.value + "🔍 错误详情: ${e.message}"
                     }
+                    deferreds.awaitAll() // Wait for all in batch
                 }
+                
+                // ... (Step C remains same)
                 
                 // Step C: Verification and Retry for Missing Words
                 val missingWords = wordsList.filter { !importedWordsSet.contains(it.lowercase().trim()) }
@@ -622,68 +559,11 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
                     chunkQueue.addAll(missingChunks)
                     
                     // Process Retry Queue for Missing Words
+                    // Sequential for retry to be safe
                     while (chunkQueue.isNotEmpty()) {
                         val (chunk, retryCount) = chunkQueue.pollFirst()!!
                         _importLogs.value = _importLogs.value + "Step C: 补录漏词 (剩余批次: ${chunkQueue.size})..."
-                        
-                         val chunkPrompt = """
-                            You are a strict JSON data generator. Analyze these English words: $chunk
-                            
-                            Return a JSON Array of objects.
-                            
-                            STRICT JSON FORMAT RULES:
-                            1. "word": String.
-                            2. "phonetic": String.
-                            3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
-                               - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
-                               - "pos": String (e.g., "n", "v", "adj").
-                               - "meaning": String (Chinese definition).
-                            4. "definition_en": String (Brief English definition).
-                            5. "example": String. Format: "En sentence. Cn translation."
-                            6. "memory_method": String. Escape double quotes inside strings with backslash.
-                            
-                            IMPORTANT: Ensure valid JSON syntax. No trailing commas.
-                            NO MARKDOWN. NO COMMENTS. ONLY JSON.
-                        """.trimIndent()
-
-                        val chunkRequest = AiRequest(
-                            model = "Qwen/Qwen2.5-7B-Instruct",
-                            messages = listOf(Message("user", chunkPrompt)),
-                            temperature = 0.3
-                        )
-                        
-                        try {
-                             val chunkResponse = RetrofitClient.api.chat(chunkRequest)
-                             val chunkContent = chunkResponse.choices.first().message.content
-                             val chunkJsonStart = chunkContent.indexOf('[')
-                             val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
-                             
-                             if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
-                                val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
-                                val standardizedWords: List<StandardizedWord> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
-                                
-                                standardizedWords.forEach { stdWord ->
-                                    val wordToSave = stdWord.toEntity(
-                                        libraryId = _currentLibraryId.value,
-                                        example = stdWord.example,
-                                        memoryMethod = stdWord.memoryMethod,
-                                        definitionEn = stdWord.definitionEn
-                                    )
-                                    wordDao.insertWord(wordToSave)
-                                    importedWordsSet.add(stdWord.word.lowercase().trim())
-                                    _importLogs.value = _importLogs.value + "📥 补录成功: ${stdWord.word}"
-                                }
-                             } else {
-                                throw Exception("AI 返回格式错误")
-                             }
-                        } catch(e: Exception) {
-                            if (retryCount < maxRetries) {
-                                _importLogs.value = _importLogs.value + "⚠️ 补录失败，重试 (重试 ${retryCount + 1}/$maxRetries)..."
-                                chunkQueue.addLast(chunk to (retryCount + 1))
-                            } else {
-                                _importLogs.value = _importLogs.value + "❌ 补录彻底失败: $chunk"
-                            }
-                        }
+                        processChunk(chunk, retryCount, maxRetries, chunkQueue, importedWordsSet)
                     }
                 }
 
@@ -695,6 +575,85 @@ class LibraryViewModel(private val wordDao: WordDao, private val prefs: SharedPr
             } finally {
                 _isImporting.value = false
             }
+        }
+    }
+    
+    // Extracted Chunk Processing Logic
+    private suspend fun processChunk(
+        chunk: List<String>, 
+        retryCount: Int, 
+        maxRetries: Int, 
+        chunkQueue: ArrayDeque<Pair<List<String>, Int>>,
+        importedWordsSet: MutableSet<String>
+    ) {
+        val chunkPrompt = """
+            You are a strict JSON data generator. Analyze these English words: $chunk
+            
+            Return a JSON Array of objects.
+            
+            STRICT JSON FORMAT RULES:
+            1. "word": String (The LEMMA/ROOT form). e.g., if input is "ran", return "run".
+            2. "phonetic": String.
+            3. "senses": Object with exactly 10 keys: "sense_1" to "sense_10".
+               - Each key must be either null (if unused) or an Object { "pos": "...", "meaning": "..." }.
+               - "pos": String (e.g., "n", "v", "adj").
+               - "meaning": String (Chinese definition).
+            4. "definition_en": String (Brief English definition).
+            5. "example": String. Format: "En sentence. Cn translation."
+            6. "memory_method": String. Escape double quotes inside strings with backslash.
+            7. "forms": Object (Word Variations) or null.
+               - "past": String (Past Tense).
+               - "participle": String (Past Participle).
+               - "plural": String (Plural).
+               - "third_person": String (3rd Person Singular).
+            
+            IMPORTANT: Ensure valid JSON syntax. No trailing commas.
+            NO MARKDOWN. NO COMMENTS. ONLY JSON.
+        """.trimIndent()
+
+        val chunkRequest = AiRequest(
+            model = "Qwen/Qwen2.5-7B-Instruct",
+            messages = listOf(Message("user", chunkPrompt)),
+            temperature = 0.3
+        )
+
+        try {
+            val chunkResponse = RetrofitClient.api.chat(chunkRequest)
+            val chunkContent = chunkResponse.choices.first().message.content
+            
+            val chunkJsonStart = chunkContent.indexOf('[')
+            val chunkJsonEnd = chunkContent.lastIndexOf(']') + 1
+            if (chunkJsonStart != -1 && chunkJsonEnd > chunkJsonStart) {
+                val chunkJsonStr = chunkContent.substring(chunkJsonStart, chunkJsonEnd)
+                val standardizedWords: List<StandardizedWord> = com.google.gson.Gson().fromJson(chunkJsonStr, object : com.google.gson.reflect.TypeToken<List<StandardizedWord>>() {}.type)
+                
+                if (standardizedWords.size < chunk.size) {
+                    _importLogs.value = _importLogs.value + "⚠️ AI返回数量不足 (${standardizedWords.size}/${chunk.size})，正在检查漏词..."
+                }
+
+                standardizedWords.forEach { stdWord ->
+                    val wordToSave = stdWord.toEntity(
+                        libraryId = _currentLibraryId.value,
+                        example = stdWord.example,
+                        memoryMethod = stdWord.memoryMethod,
+                        definitionEn = stdWord.definitionEn
+                    )
+                    wordDao.insertWord(wordToSave)
+                    importedWordsSet.add(stdWord.word.lowercase().trim())
+                    _importLogs.value = _importLogs.value + "📥 已保存: ${stdWord.word}"
+                }
+            } else {
+                throw Exception("AI 返回格式错误 (找不到 JSON Array)")
+            }
+        } catch (e: Exception) {
+            if (retryCount < maxRetries) {
+                _importLogs.value = _importLogs.value + "⚠️ 本批次失败，已重新加入队列 (重试 ${retryCount + 1}/$maxRetries): ${e.message}"
+                chunkQueue.addLast(chunk to (retryCount + 1))
+            } else {
+                _importLogs.value = _importLogs.value + "❌ 本批次彻底失败，放弃: $chunk"
+            }
+            LogUtil.logError("ImportChunk", "Failed", e)
+            _importLogs.value = _importLogs.value + "🔍 错误详情: ${e.message}"
         }
     }
 }

@@ -7,13 +7,21 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Word::class, Library::class, TestHistory::class, TestSession::class], version = 8, exportSchema = false)
+@Database(entities = [Word::class, Library::class, TestHistory::class, TestSession::class], version = 9, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun wordDao(): WordDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+        
+        // ... (previous migrations)
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE words ADD COLUMN formsJson TEXT DEFAULT NULL")
+            }
+        }
         
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -87,7 +95,7 @@ abstract class AppDatabase : RoomDatabase() {
                         db.execSQL("INSERT INTO libraries (id, name, description, createdAt, lastIndex) VALUES (1, '默认词库', 'Default Library', ${System.currentTimeMillis()}, 0)")
                     }
                 })
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
