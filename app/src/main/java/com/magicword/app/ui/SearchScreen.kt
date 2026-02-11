@@ -54,11 +54,14 @@ fun SearchScreen() {
     val result by viewModel.searchResult.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
+    val currentLibraryId = prefs.getInt("current_library_id", 1)
+
     // Auto-save when result is ready
     LaunchedEffect(result) {
         result?.let { word ->
-            viewModel.saveWord(word, libraryId = 1)
-            LogUtil.logFeature("AutoSave", "Success", "{ \"word\": \"${word.word}\" }")
+            viewModel.saveWord(word, libraryId = currentLibraryId)
+            LogUtil.logFeature("AutoSave", "Success", "{ \"word\": \"${word.word}\", \"libraryId\": $currentLibraryId }")
         }
     }
 

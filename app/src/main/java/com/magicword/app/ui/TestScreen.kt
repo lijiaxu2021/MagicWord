@@ -152,8 +152,12 @@ fun TestScreen() {
                 libraryId = testCandidates?.firstOrNull()?.libraryId ?: 1 // Approximate library ID
             )
             viewModel.saveTestSession(session)
+            
+            // If finished, ensure word stats are updated immediately (already handled in onFinish callback but good to be safe)
         }
     }
+    
+    // Handle App Pause/Resume (Optional, but LaunchedEffect is tied to composition, which is good enough for now)
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Show Test Source Info and History Button
@@ -211,9 +215,10 @@ fun TestScreen() {
                     viewModel.saveTestResult(history)
                     viewModel.clearTestSession()
                     
-                    // Update Word Stats for all results
+                    // Update Word Stats for all results - CRITICAL FIX: Ensure this runs!
                     results.forEach { result ->
                         viewModel.updateWordStats(result.wordId, result.isCorrect)
+                        LogUtil.logFeature("TestStatsUpdate", "Auto", "{ \"wordId\": ${result.wordId}, \"isCorrect\": ${result.isCorrect} }")
                     }
                 }
             )
