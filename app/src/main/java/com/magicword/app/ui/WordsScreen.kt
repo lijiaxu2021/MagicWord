@@ -23,15 +23,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.magicword.app.data.AppDatabase
 import com.magicword.app.data.Word
-import com.magicword.app.utils.LogUtil
+import com.magicword.app.data.AppDatabase
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-
 import sh.calvin.reorderable.ReorderableItem
+
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.activity.compose.rememberLauncherForActivityResult
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,6 +43,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.scale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -177,29 +178,96 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
         }
     }
 
+    // Drawer State
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var showChineseInDrawer by remember { mutableStateOf(false) }
+
     // MAIN LAYOUT STRUCTURE
-    // Use a single Scaffold for the entire screen
-    Scaffold(
-        topBar = {
-            Column(
-                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+    // Use ModalNavigationDrawer wrapping Scaffold
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(260.dp) // Narrow drawer
             ) {
-                // 1. Top Bar (Title + Actions)
-                CenterAlignedTopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { showLibrarySheet = true }
-                        ) {
-                            Text(
-                                text = currentLibrary?.name ?: "默认词库",
-                                style = MaterialTheme.typography.titleMedium
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("快速导航", style = MaterialTheme.typography.titleMedium)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (showChineseInDrawer) "中" else "En", style = MaterialTheme.typography.bodySmall)
+                            Switch(
+                                checked = showChineseInDrawer,
+                                onCheckedChange = { showChineseInDrawer = it },
+                                modifier = Modifier.scale(0.7f)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
                         }
-                    },
-                    actions = {
+                    }
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    if (words.isEmpty()) {
+                        Text("暂无单词", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            itemsIndexed(words) { index, word ->
+                                Text(
+                                    text = if (showChineseInDrawer) word.definitionCn else word.word,
+                                    maxLines = 1,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            scope.launch {
+                                                drawerState.close()
+                                                // Navigate
+                                                isListMode = false
+                                                pagerState.scrollToPage(index)
+                                                // Ensure restoration doesn't override
+                                                isNavigatingFromSearch = true 
+                                                // (We reuse the search navigation flag or just rely on manual scroll)
+                                                // Actually manually scrolling pagerState usually updates the state and persists.
+                                                // But let's set flag to be safe if a recomposition happens.
+                                            }
+                                        }
+                                        .padding(vertical = 12.dp)
+                                )
+                                Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                Column(
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                ) {
+                    // 1. Top Bar (Title + Actions)
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable { showLibrarySheet = true }
+                            ) {
+                                Text(
+                                    text = currentLibrary?.name ?: "默认词库",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Switch Library", modifier = Modifier.size(20.dp))
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Quick Nav")
+                            }
+                        },
+                        actions = {
                         // Action buttons based on mode
                         if (isListMode) {
                             // Bulk Import
@@ -432,7 +500,8 @@ fun WordsScreen(onOpenSettings: () -> Unit) {
             }
         }
     }
-    
+    }
+
     // Handle Global Search Trigger
     if (showSearch) {
         LaunchedEffect(Unit) {
