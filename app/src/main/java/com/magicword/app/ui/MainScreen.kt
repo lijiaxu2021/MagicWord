@@ -117,10 +117,13 @@ fun MainScreen() {
     if (currentOverlay == "settings") {
         SettingsScreen(
             onBack = { currentOverlay = null },
-            onNavigateToLogs = { currentOverlay = "logs" }
+            onNavigateToLogs = { currentOverlay = "logs" },
+            onNavigateToAbout = { currentOverlay = "about" }
         )
     } else if (currentOverlay == "logs") {
         LogListScreen(onBack = { currentOverlay = "settings" })
+    } else if (currentOverlay == "about") {
+        AboutScreen(onBack = { currentOverlay = "settings" })
     } else if (currentOverlay == "profile") {
         ProfileScreen(
             onBack = { currentOverlay = null },

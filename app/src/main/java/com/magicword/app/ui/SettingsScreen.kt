@@ -26,12 +26,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateToAbout: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
     var isLogEnabled by remember { mutableStateOf(prefs.getBoolean("enable_log", true)) }
-    var showAboutDialog by remember { mutableStateOf(false) }
-
+    
     // Config State
     var apiKey by remember { mutableStateOf(AppConfig.apiKey) }
     var modelName by remember { mutableStateOf(AppConfig.modelName) }
@@ -183,8 +182,8 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit) {
 
             // About
             ListItem(
-                headlineContent = { Text("关于 MagicWord") },
-                modifier = Modifier.clickable { showAboutDialog = true },
+                headlineContent = { Text("关于与使用说明") },
+                modifier = Modifier.clickable { onNavigateToAbout() },
                 trailingContent = { Text("查看 >") }
             )
             

@@ -57,13 +57,11 @@ fun WordListScreen(viewModel: LibraryViewModel) {
     
     var showCreateDialog by remember { mutableStateOf(false) }
     
-    // Display Mode: 0=Both, 1=En (Table), 2=Cn
-    var displayMode by remember { mutableIntStateOf(0) }
-    
     // Right Drawer State
     var showDrawer by remember { mutableStateOf(false) }
     
     val currentWordList = wordLists.find { it.id == currentWordListId }
+    val displayMode = currentWordList?.viewMode ?: 0
     
     // Shared List State for scrolling
     val listState = rememberLazyListState()
@@ -132,7 +130,8 @@ fun WordListScreen(viewModel: LibraryViewModel) {
                         displayMode = displayMode,
                         listState = listState,
                         onToggleMode = {
-                            displayMode = (displayMode + 1) % 3
+                            val newMode = (displayMode + 1) % 3
+                            viewModel.updateWordList(currentWordList.copy(viewMode = newMode))
                         },
                         onWordClick = { libId, wordId ->
                             viewModel.jumpToWord(libId, wordId)

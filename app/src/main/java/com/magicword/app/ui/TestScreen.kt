@@ -209,7 +209,7 @@ fun TestScreen() {
                 onBack = {},
                 onFinish = { finalState, results ->
                     val history = TestHistory(
-                        totalQuestions = words.size,
+                        totalQuestions = results.size,
                         correctCount = finalState.score,
                         testType = "CHOICE",
                         durationSeconds = 0, // Need to track duration
@@ -442,7 +442,7 @@ fun QuizChoiceMode(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("测试结束！", style = MaterialTheme.typography.headlineLarge)
-            Text("得分: ${state.score} / ${finalWords.size}", style = MaterialTheme.typography.headlineMedium)
+            Text("得分: ${state.score} / ${results.size}", style = MaterialTheme.typography.headlineMedium)
             Button(
                 onClick = { 
                     results.clear()

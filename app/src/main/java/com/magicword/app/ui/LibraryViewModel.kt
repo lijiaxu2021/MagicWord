@@ -921,6 +921,12 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
         }
     }
 
+    fun updateWordList(wordList: WordList) {
+        viewModelScope.launch {
+            wordDao.updateWordList(wordList)
+        }
+    }
+
     // --- Jump Navigation ---
     // Persistent state for pending jump
     private val _pendingJumpWordId = MutableStateFlow<Int?>(null)
