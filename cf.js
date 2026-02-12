@@ -1,13 +1,73 @@
 
 // 配置常量
-const GITHUB_RAW_BASE = "https://raw.githubusercontent.com";
-const REPO_OWNER = "lijiaxu2021"; // Corrected owner
-const REPO_NAME = "MagicWord";
-const BRANCH = "main";
+const HARDCODED_RAW_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/main/MagicWordLatest.apk";
 const APK_FILENAME = "MagicWordLatest.apk";
-const HARDCODED_RAW_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/refs/heads/main/MagicWordLatest.apk";
 
-// ... (patterns remain the same) ...
+// 需要屏蔽的路径规则 (Release 反代用)
+const BLOCKED_PATTERNS = [
+  '/login', '/logout', '/signup', '/register', '/sessions', '/session', 
+  '/auth', '/oauth', '/authorize', '/token', '/login/oauth', '/settings', 
+  '/account', '/password', '/admin', '/dashboard', '/manage', '/organizations', 
+  '/orgs', '/teams', '/api/v1/user', '/api/v1/users', '/api/v1/orgs', 
+  '/api/v1/teams', '/new', '/create', '/clone', '/fork', '/star', '/watch', 
+  '/sponsors', '/marketplace', '/pulls', '/issues/new', '/wiki/_new', 
+  '/notifications', '/subscriptions', '/watching', '/profile', '/avatar', 
+  '/emails', '/keys', '/security', '/billing', '/invoices', '/payment', 
+  '/plans', '/upgrade', '/copilot'
+];
+
+// 路径允许列表 (Release 反代用)
+const ALLOWED_PATH_PREFIXES = [
+  '/releases/download/',
+  '/releases/tag/',
+  '/releases',
+  '/github-production-release-asset-',
+  `/${APK_FILENAME}`, // 允许访问根目录的 APK
+  '/latest/MagicWord.apk' // 允许访问 latest 别名
+];
+
+function isPathBlocked(path) {
+  // 1. 白名单优先
+  for (const prefix of ALLOWED_PATH_PREFIXES) {
+    if (path.startsWith(prefix)) return false;
+  }
+  
+  // 2. 首页屏蔽
+  if (path === '/' || path === '') return true;
+  
+  // 3. 黑名单屏蔽
+  for (const pattern of BLOCKED_PATTERNS) {
+    if (path === pattern || path.startsWith(pattern + '/') || path.startsWith(pattern + '?')) {
+      return true;
+    }
+    // API 特殊处理
+    if (path.includes('/api/') && pattern.includes('/api/')) {
+       // 简单包含匹配，实际可更严格
+       if (path.includes(pattern)) return true;
+    }
+  }
+  
+  // 4. 屏蔽隐藏文件
+  if (path.split('/').some(segment => segment.startsWith('.'))) return true;
+
+  // 5. API 和 Releases 放行，其他默认屏蔽
+  if (path.includes('/releases/') || path.includes('/api/')) {
+      return false;
+  }
+
+  return true;
+}
+
+function blockResponse(path) {
+  return new Response(JSON.stringify({
+    error: 'Access Denied',
+    message: 'This endpoint is not available via proxy',
+    path: path
+  }, null, 2), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
 
 async function handleRequest(request) {
   const url = new URL(request.url);
@@ -56,11 +116,6 @@ async function handleRequest(request) {
       return blockResponse(path);
     }
     
-    // 替换 API 路径中的 owner (如果客户端传错) 或者直接转发
-    // 这里假设客户端请求的是 /api/repos/{owner}/{repo}/...
-    // 我们可以强制修正 owner 为 lijiaxu2021 以防万一
-    // 但 UpdateManager.kt 也已经修正，所以直接转发即可
-    
     path = path.replace('/api', '');
     const newUrl = 'https://api.github.com' + path + url.search;
     headers.delete('authorization');
@@ -68,7 +123,6 @@ async function handleRequest(request) {
     
     return fetch(newUrl, { headers: headers, method: request.method, body: request.body });
   }
-
 
   // 处理 Release 页面和下载重定向
   if (path.includes('/releases/')) {
