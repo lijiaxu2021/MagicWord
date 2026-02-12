@@ -4,14 +4,10 @@ const TARGET_DOMAIN = 'api.github.com'; // 默认代理 GitHub API
 const RAW_DOMAIN = 'raw.githubusercontent.com'; // Raw 文件域名
 const WORKER_DOMAIN = 'mag.upxuu.com'; // 您的 Worker 域名
 
-// 微信验证文件配置 (如果需要的话，保留备用)
-// const WECHAT_VERIFICATION = { 
-//     filename: '7273aaca28e7f83424eab44540cf62f4.txt', 
-//     content: 'daa7c3f8647aa96917e84c780822fe00473cea89' 
-// }; 
-
 // APK 直链配置
 const RAW_APK_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/main/MagicWordLatest.apk";
+// 通知文件直链配置
+const NOTICE_JSON_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/main/notice.json";
 
 addEventListener('fetch', event => { 
     event.respondWith(handleRequest(event.request, event)); 
@@ -25,8 +21,13 @@ async function handleRequest(request, event) {
     if (url.pathname === `/MagicWordLatest.apk` || url.pathname === "/latest/MagicWord.apk") { 
         return fetchRawApk();
     }
+
+    // 2. 通知文件代理
+    if (url.pathname === '/notice.json') {
+        return fetchNoticeJson();
+    }
      
-    // 2. API 代理逻辑
+    // 3. API 代理逻辑
     // 只有路径以 /api/ 开头的才被认为是 API 请求 (客户端约定)
     if (url.pathname.startsWith('/api/')) {
         // 去掉 /api 前缀，代理到 api.github.com
@@ -36,7 +37,7 @@ async function handleRequest(request, event) {
         return proxyRequest(request, targetUrl, TARGET_DOMAIN);
     }
 
-    // 3. 兜底/默认页面
+    // 4. 兜底/默认页面
     return new Response("MagicWord Proxy Service is Running.", { status: 200 });
 } 
 
@@ -56,6 +57,27 @@ async function fetchRawApk() {
             return new Response(response.body, { status: 200, headers: newHeaders });
         } else {
             return new Response(`File not found on GitHub Raw (Status: ${response.status})`, { status: 404 });
+        }
+    } catch (error) {
+        return new Response(`Proxy Error: ${error.message}`, { status: 502 });
+    }
+}
+
+async function fetchNoticeJson() {
+    try {
+        const response = await fetch(NOTICE_JSON_URL, {
+            headers: { 
+                "User-Agent": "MagicWord-Updater" 
+            }
+        });
+
+        if (response.ok) {
+            const newHeaders = new Headers(response.headers);
+            newHeaders.set("Content-Type", "application/json; charset=utf-8");
+            newHeaders.set("Access-Control-Allow-Origin", "*");
+            return new Response(response.body, { status: 200, headers: newHeaders });
+        } else {
+            return new Response(`Notice file not found (Status: ${response.status})`, { status: 404 });
         }
     } catch (error) {
         return new Response(`Proxy Error: ${error.message}`, { status: 502 });

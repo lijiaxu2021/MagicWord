@@ -23,12 +23,7 @@ import com.magicword.app.utils.LogUtil
 import java.io.File
 import com.magicword.app.data.AppDatabase
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.magicword.app.utils.UpdateManager
-
-import com.magicword.app.BuildConfig
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.launch
+import com.magicword.app.utils.NoticeManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +32,12 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
     val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
     var isLogEnabled by remember { mutableStateOf(prefs.getBoolean("enable_log", true)) }
     var isAutoUpdateEnabled by remember { mutableStateOf(prefs.getBoolean("auto_update", true)) }
+    
+    // Notice State
+    var latestNotice by remember { mutableStateOf<NoticeManager.Notice?>(null) }
+    LaunchedEffect(Unit) {
+        latestNotice = NoticeManager.getLatestNotice()
+    }
     
     // Update State
     val scope = rememberCoroutineScope()
@@ -272,6 +273,21 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
                 modifier = Modifier.clickable { onNavigateToAbout() },
                 trailingContent = { Text("查看 >") }
             )
+            
+            if (latestNotice != null) {
+                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                Text("最新公告", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(latestNotice!!.title, style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(latestNotice!!.content, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
 

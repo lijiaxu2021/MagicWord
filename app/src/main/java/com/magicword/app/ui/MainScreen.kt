@@ -82,12 +82,43 @@ fun MainScreen() {
     var downloadProgress by remember { mutableIntStateOf(0) }
     var isDownloading by remember { mutableStateOf(false) }
 
+    // Notice Check
+    var showNoticeDialog by remember { mutableStateOf(false) }
+    var currentNotice by remember { mutableStateOf<com.magicword.app.utils.NoticeManager.Notice?>(null) }
+
     LaunchedEffect(Unit) {
+        // Check updates
         val info = com.magicword.app.utils.UpdateManager.checkUpdate(com.magicword.app.BuildConfig.VERSION_NAME)
         if (info != null && info.hasUpdate) {
             updateInfo = info
             showUpdateDialog = true
         }
+        
+        // Check notices
+        val notice = com.magicword.app.utils.NoticeManager.checkNotice(context)
+        if (notice != null) {
+            currentNotice = notice
+            showNoticeDialog = true
+        }
+    }
+
+    if (showNoticeDialog && currentNotice != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { 
+                showNoticeDialog = false 
+                com.magicword.app.utils.NoticeManager.markNoticeAsRead(context, currentNotice!!.id)
+            },
+            title = { Text(currentNotice!!.title) },
+            text = { Text(currentNotice!!.content) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showNoticeDialog = false
+                    com.magicword.app.utils.NoticeManager.markNoticeAsRead(context, currentNotice!!.id)
+                }) {
+                    Text("我知道了")
+                }
+            }
+        )
     }
 
     if (showUpdateDialog && updateInfo != null) {
