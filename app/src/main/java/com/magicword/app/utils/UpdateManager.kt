@@ -90,7 +90,8 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext false
                 
-                val body = response.body ?: return@withContext false
+                // Strictly use body() method to avoid Kotlin property access issues with package-private fields in some OkHttp versions
+                val body = response.body() ?: return@withContext false
                 val totalLength = body.contentLength()
                 
                 body.byteStream().use { input ->
