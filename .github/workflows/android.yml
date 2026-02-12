@@ -78,5 +78,5 @@ jobs:
         git config --global user.email "action@github.com"
         cp app/build/outputs/apk/release/app-release.apk MagicWordLatest.apk
         git add MagicWordLatest.apk
-        git commit -m "Update MagicWordLatest.apk" || echo "No changes to commit"
+        git commit -m "Update MagicWordLatest.apk [skip ci]" || echo "No changes to commit"
         git push origin main
