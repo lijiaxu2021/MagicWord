@@ -51,7 +51,8 @@ jobs:
 
     - name: Rename APK
       run: |
-        mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}.apk
+        cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}.apk
+        cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/MagicWord.apk
 
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -59,7 +60,9 @@ jobs:
       with:
         tag_name: v${{ steps.get_version.outputs.VERSION_NAME }}
         name: Release v${{ steps.get_version.outputs.VERSION_NAME }}
-        files: app/build/outputs/apk/release/MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}.apk
+        files: |
+          app/build/outputs/apk/release/MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}.apk
+          app/build/outputs/apk/release/MagicWord.apk
         draft: false
         prerelease: false
       env:
