@@ -38,6 +38,11 @@ async function handleRequest(request, event) {
         return fetchLibraryIndex();
     }
 
+    // 3.1 词库文件代理 (Generic Library File Proxy)
+    if (url.pathname.startsWith('/library/file/')) {
+        return fetchLibraryFile(url.pathname);
+    }
+
     // 4. 词库上传接口
     if (url.pathname === '/library/upload' && request.method === 'POST') {
         return handleLibraryUpload(request);
@@ -64,6 +69,12 @@ async function fetchNoticeJson() {
 
 async function fetchLibraryIndex() {
     return proxyRawFile(LIBRARY_INDEX_URL, "application/json; charset=utf-8");
+}
+
+async function fetchLibraryFile(pathname) {
+    const filePath = pathname.replace('/library/file/', '');
+    const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${filePath}`;
+    return proxyRawFile(url, "application/json; charset=utf-8");
 }
 
 async function proxyRawFile(targetUrl, contentType, contentDisposition) {

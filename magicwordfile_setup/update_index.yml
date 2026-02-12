@@ -26,9 +26,8 @@ jobs:
           import json
 
           index = []
-          base_url = "https://mag.upxuu.com/magicwordfile" # Can be used if proxy supports direct file access, or raw github
-          # Use Raw GitHub for stability:
-          raw_base = "https://raw.githubusercontent.com/lijiaxu2021/magicwordfile/main"
+          # Use Proxy URL for downloads to ensure access in all regions
+          base_url = "https://mag.upxuu.com/library/file" 
 
           for item in os.listdir('.'):
               if os.path.isdir(item) and not item.startswith('.'):
@@ -37,8 +36,8 @@ jobs:
                       try:
                           with open(info_path, 'r', encoding='utf-8') as f:
                               data = json.load(f)
-                              # Add direct download URL
-                              data['downloadUrl'] = f"{raw_base}/{item}/library.json"
+                              # Add direct download URL via Proxy
+                              data['downloadUrl'] = f"{base_url}/{item}/library.json"
                               index.append(data)
                       except Exception as e:
                           print(f"Error processing {info_path}: {e}")
