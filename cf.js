@@ -1,170 +1,90 @@
 
 // 配置常量
-const HARDCODED_RAW_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/main/MagicWordLatest.apk";
+const GITHUB_OWNER = "lijiaxu2021";
+const GITHUB_REPO = "MagicWord";
 const APK_FILENAME = "MagicWordLatest.apk";
 
-// 需要屏蔽的路径规则 (Release 反代用)
-const BLOCKED_PATTERNS = [
-  '/login', '/logout', '/signup', '/register', '/sessions', '/session', 
-  '/auth', '/oauth', '/authorize', '/token', '/login/oauth', '/settings', 
-  '/account', '/password', '/admin', '/dashboard', '/manage', '/organizations', 
-  '/orgs', '/teams', '/api/v1/user', '/api/v1/users', '/api/v1/orgs', 
-  '/api/v1/teams', '/new', '/create', '/clone', '/fork', '/star', '/watch', 
-  '/sponsors', '/marketplace', '/pulls', '/issues/new', '/wiki/_new', 
-  '/notifications', '/subscriptions', '/watching', '/profile', '/avatar', 
-  '/emails', '/keys', '/security', '/billing', '/invoices', '/payment', 
-  '/plans', '/upgrade', '/copilot'
-];
-
-// 路径允许列表 (Release 反代用)
-const ALLOWED_PATH_PREFIXES = [
-  '/releases/download/',
-  '/releases/tag/',
-  '/releases',
-  '/github-production-release-asset-',
-  `/${APK_FILENAME}`, // 允许访问根目录的 APK
-  '/latest/MagicWord.apk' // 允许访问 latest 别名
-];
-
-function isPathBlocked(path) {
-  // 1. 白名单优先
-  for (const prefix of ALLOWED_PATH_PREFIXES) {
-    if (path.startsWith(prefix)) return false;
-  }
-  
-  // 2. 首页屏蔽
-  if (path === '/' || path === '') return true;
-  
-  // 3. 黑名单屏蔽
-  for (const pattern of BLOCKED_PATTERNS) {
-    if (path === pattern || path.startsWith(pattern + '/') || path.startsWith(pattern + '?')) {
-      return true;
-    }
-    // API 特殊处理
-    if (path.includes('/api/') && pattern.includes('/api/')) {
-       // 简单包含匹配，实际可更严格
-       if (path.includes(pattern)) return true;
-    }
-  }
-  
-  // 4. 屏蔽隐藏文件
-  if (path.split('/').some(segment => segment.startsWith('.'))) return true;
-
-  // 5. API 和 Releases 放行，其他默认屏蔽
-  if (path.includes('/releases/') || path.includes('/api/')) {
-      return false;
-  }
-
-  return true;
-}
-
-function blockResponse(path) {
-  return new Response(JSON.stringify({
-    error: 'Access Denied',
-    message: 'This endpoint is not available via proxy',
-    path: path
-  }, null, 2), {
-    status: 403,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+// 两个关键的目标地址
+// 1. APK 直链 (Raw)
+const RAW_APK_URL = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${APK_FILENAME}`;
+// 2. GitHub API (Release Check)
+const GITHUB_API_BASE = "https://api.github.com";
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  let path = url.pathname;
-  let headers = new Headers(request.headers);
-
+  const path = url.pathname;
+  
   // ---------------------------------------------------------
-  // 1. Raw File Proxy (优先处理 MagicWordLatest.apk)
+  // 1. APK 下载请求 (Raw File Proxy)
   // ---------------------------------------------------------
+  // 匹配 /MagicWordLatest.apk 或 /latest/MagicWord.apk
   if (path === `/${APK_FILENAME}` || path === "/latest/MagicWord.apk") {
-    // 使用用户指定的硬编码 Raw URL
-    const response = await fetch(HARDCODED_RAW_URL, {
-      headers: { "User-Agent": "MagicWord-Updater" }
+    // 转发请求到 GitHub Raw
+    const response = await fetch(RAW_APK_URL, {
+      headers: { 
+        "User-Agent": "MagicWord-Updater" // 防止 GitHub 拦截
+      }
     });
 
     if (response.status === 200) {
+      // 成功获取文件，重写响应头，强制浏览器下载
       const newHeaders = new Headers(response.headers);
       newHeaders.set("Content-Type", "application/vnd.android.package-archive");
       newHeaders.set("Content-Disposition", `attachment; filename="${APK_FILENAME}"`);
-      return new Response(response.body, { status: 200, headers: newHeaders });
+      // 允许跨域
+      newHeaders.set("Access-Control-Allow-Origin", "*");
+      
+      return new Response(response.body, { 
+        status: 200, 
+        headers: newHeaders 
+      });
     } else {
-      return new Response(`File not found on GitHub Raw. URL: ${HARDCODED_RAW_URL}`, { status: 404 });
+      return new Response(`File not found on GitHub Raw.\nURL: ${RAW_APK_URL}\nStatus: ${response.status}`, { status: 404 });
     }
   }
 
   // ---------------------------------------------------------
-  // 2. 安全检查
+  // 2. API 请求转发 (Release Check)
   // ---------------------------------------------------------
-  if (isPathBlocked(path)) {
-    return blockResponse(path);
-  }
+  // 客户端请求格式: /api/repos/{owner}/{repo}/releases/latest
+  if (path.startsWith("/api/")) {
+    // 去掉前缀 /api，还原为 GitHub API 的路径
+    // 例如 /api/repos/lijiaxu2021/MagicWord/releases/latest -> /repos/lijiaxu2021/MagicWord/releases/latest
+    const apiPath = path.replace(/^\/api/, "");
+    const targetUrl = GITHUB_API_BASE + apiPath + url.search;
 
-  // ---------------------------------------------------------
-  // 3. GitHub Release Proxy 逻辑
-  // ---------------------------------------------------------
-  
-  // 处理 objects.githubusercontent.com (实际下载地址)
-  if (path.startsWith('/github-production-release-asset-')) {
-    const newUrl = 'https://objects.githubusercontent.com' + path + url.search;
-    return fetch(newUrl, { headers: headers, method: request.method, body: request.body });
-  }
+    // 构造新请求
+    const headers = new Headers(request.headers);
+    headers.delete("Host");
+    headers.delete("Referer");
+    // GitHub API 要求 User-Agent
+    headers.set("User-Agent", "MagicWord-Proxy");
+    // 移除敏感信息
+    headers.delete("Authorization");
+    headers.delete("Cookie");
 
-  // 处理 API 请求 (用于检查更新)
-  if (path.startsWith('/api/')) {
-    if (!path.includes('/repos/') || !path.includes('/releases')) {
-      return blockResponse(path);
-    }
-    
-    path = path.replace('/api', '');
-    const newUrl = 'https://api.github.com' + path + url.search;
-    headers.delete('authorization');
-    headers.delete('cookie');
-    
-    return fetch(newUrl, { headers: headers, method: request.method, body: request.body });
-  }
-
-  // 处理 Release 页面和下载重定向
-  if (path.includes('/releases/')) {
-    const githubUrl = 'https://github.com' + path + url.search;
-    headers.delete('authorization');
-    headers.delete('cookie');
-    headers.set('User-Agent', 'Mozilla/5.0 (compatible; GitHubProxy/1.0)');
-
-    const response = await fetch(githubUrl, {
-      headers: headers,
+    const response = await fetch(targetUrl, {
       method: request.method,
-      body: request.body,
-      redirect: 'manual' // 手动处理重定向
+      headers: headers,
+      body: request.body
     });
 
-    // 处理 302/301 重定向
-    if (response.status === 302 || response.status === 301) {
-      const location = response.headers.get('Location');
-      if (location && location.includes('objects.githubusercontent.com')) {
-        const assetUrl = new URL(location);
-        // 重写为当前代理域名的路径，以便再次拦截
-        const newLocation = url.origin + assetUrl.pathname + assetUrl.search;
-        return new Response(null, {
-          status: 302,
-          headers: { 'Location': newLocation, 'Cache-Control': 'no-cache' }
-        });
-      }
-    }
+    // 处理响应
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set("Access-Control-Allow-Origin", "*"); // 允许跨域调用 API
 
-    // 正常返回
-    if (response.status === 200) {
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.delete('set-cookie');
-      return new Response(response.body, { status: response.status, headers: responseHeaders });
-    }
-    
-    return response;
+    return new Response(response.body, {
+      status: response.status,
+      headers: newHeaders
+    });
   }
 
-  return blockResponse(path);
+  // ---------------------------------------------------------
+  // 3. 兜底响应
+  // ---------------------------------------------------------
+  return new Response("MagicWord Proxy Service is Running.\nAvailable Endpoints:\n- /MagicWordLatest.apk\n- /api/repos/...", { status: 200 });
 }
 
-addEventListener('fetch', event => {
+addEventListener("fetch", event => {
   event.respondWith(handleRequest(event.request));
 });
