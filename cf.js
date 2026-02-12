@@ -68,7 +68,9 @@ async function fetchNoticeJson() {
 }
 
 async function fetchLibraryIndex() {
-    return proxyRawFile(LIBRARY_INDEX_URL, "application/json; charset=utf-8");
+    // Force cache bust to get latest index
+    const url = `${LIBRARY_INDEX_URL}?t=${Date.now()}`;
+    return proxyRawFile(url, "application/json; charset=utf-8");
 }
 
 async function fetchLibraryFile(pathname) {

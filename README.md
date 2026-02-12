@@ -40,10 +40,10 @@ EasyWord 是一款结合了 **AI 智能**与 **SM-2 记忆算法**的背单词�
 - **拼写模式**：强化拼写记忆。
 - **数据统计**：记录每次测试的正确率和详情。
 
-### 6. 系统功能 [New]
-- **自动更新**：支持通过反代节点自动检查 GitHub Release 新版本。
-- **关于页面**：内置详细使用指南和版本信息。
-- **设置管理**：支持自定义 AI 模型参数和用户偏好 (Persona)。
+### 7. 在线词库市场 [New]
+- **云端同步**：浏览并下载社区共享的精选词库。
+- **一键分享**：将本地词库打包上传，与他人分享您的学习成果。
+- **自动更新**：在线词库索引通过 GitHub Actions 自动维护，实时获取最新资源。
 
 ---
 
@@ -59,6 +59,7 @@ com.magicword.app
 ├── ui                       # UI 层 (Jetpack Compose)
 │   ├── MainScreen.kt        # 主界面
 │   ├── WordsScreen.kt       # 单词卡片
+│   ├── LibraryManagerScreen.kt # 词库管理 (本地/在线)
 │   ├── SearchScreen.kt      # AI 搜词
 │   ├── TestScreen.kt        # 测试
 │   ├── WordListScreen.kt    # 单词表
