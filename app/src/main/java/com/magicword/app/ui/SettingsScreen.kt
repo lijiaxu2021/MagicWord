@@ -20,10 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.magicword.app.utils.AppConfig
 import com.magicword.app.utils.LogUtil
+import com.magicword.app.utils.UpdateManager
+import com.magicword.app.BuildConfig
 import java.io.File
 import com.magicword.app.data.AppDatabase
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.magicword.app.utils.NoticeManager
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +55,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
         scope.launch {
             isCheckingUpdate = true
             showNoUpdateMessage = false
-            updateInfo = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            updateInfo = withContext(Dispatchers.IO) {
                 UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
             }
             isCheckingUpdate = false

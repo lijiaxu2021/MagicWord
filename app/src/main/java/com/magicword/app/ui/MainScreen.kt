@@ -261,6 +261,7 @@ fun MainScreen() {
                         1 -> WordsScreen(
                             onOpenSettings = { currentOverlay = "settings" },
                             onOpenProfile = { currentOverlay = "profile" },
+                            onManageLibraries = { currentOverlay = "library_manager" },
                             onJumpToTest = {
                                 scope.launch { pagerState.animateScrollToPage(2) } // Test is now index 2
                             }
