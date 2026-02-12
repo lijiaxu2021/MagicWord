@@ -13,8 +13,8 @@ android {
         applicationId = "com.magicword.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6 // Increment version code
-        versionName = "0.0.4"
+        versionCode = 7 // Increment version code
+        versionName = "0.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

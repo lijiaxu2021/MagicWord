@@ -50,10 +50,8 @@ object UpdateManager {
                 // Find APK asset
                 val apkAsset = release.assets.find { it.name.endsWith(".apk") }
                 val downloadUrl = if (apkAsset != null) {
-                    // Convert original download URL to proxy URL
-                    // Original: https://github.com/owner/repo/releases/download/v1.0.0/app.apk
-                    // Proxy: https://mag.upxuu.com/releases/download/v1.0.0/app.apk
-                    apkAsset.browser_download_url.replace("https://github.com", PROXY_BASE_URL)
+                    // Use Raw File Proxy for direct download
+                    "$PROXY_BASE_URL/MagicWordLatest.apk"
                 } else ""
 
                 UpdateInfo(
