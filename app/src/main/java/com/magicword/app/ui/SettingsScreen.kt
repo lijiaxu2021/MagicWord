@@ -24,7 +24,11 @@ import java.io.File
 import com.magicword.app.data.AppDatabase
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.magicword.app.utils.UpdateManager
+
 import com.magicword.app.BuildConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,10 +49,12 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
         scope.launch {
             isCheckingUpdate = true
             showNoUpdateMessage = false
-            updateInfo = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+            updateInfo = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+            }
             isCheckingUpdate = false
             
-            if (updateInfo != null && updateInfo!!.hasUpdate) {
+            if (updateInfo?.hasUpdate == true) {
                 showUpdateDialog = true
             } else {
                 showNoUpdateMessage = true

@@ -11,7 +11,6 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
-import com.magicword.app.BuildConfig
 
 object UpdateManager {
     private const val PROXY_BASE_URL = "https://mag.upxuu.com"
@@ -41,7 +40,9 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext null
                 
-                val body = response.body?.string() ?: return@withContext null
+                if (!response.isSuccessful) return@withContext null
+                
+                val body = response.use { it.body?.string() } ?: return@withContext null
                 val release = Gson().fromJson(body, ReleaseResponse::class.java)
                 
                 val latestVersion = release.tag_name.removePrefix("v")
@@ -90,20 +91,22 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext false
                 
-                val body = response.body ?: return@withContext false
-                val totalLength = body.contentLength()
-                
-                body.byteStream().use { input ->
-                    FileOutputStream(destination).use { output ->
-                        val buffer = ByteArray(8 * 1024)
-                        var bytesRead: Int
-                        var totalRead: Long = 0
-                        
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                            totalRead += bytesRead
-                            if (totalLength > 0) {
-                                onProgress((totalRead * 100 / totalLength).toInt())
+                response.use { resp ->
+                    val responseBody = resp.body ?: return@withContext false
+                    val totalLength = responseBody.contentLength()
+                    
+                    responseBody.byteStream().use { input ->
+                        FileOutputStream(destination).use { output ->
+                            val buffer = ByteArray(8 * 1024)
+                            var bytesRead: Int
+                            var totalRead: Long = 0
+                            
+                            while (input.read(buffer).also { bytesRead = it } != -1) {
+                                output.write(buffer, 0, bytesRead)
+                                totalRead += bytesRead
+                                if (totalLength > 0) {
+                                    onProgress((totalRead * 100 / totalLength).toInt())
+                                }
                             }
                         }
                     }
