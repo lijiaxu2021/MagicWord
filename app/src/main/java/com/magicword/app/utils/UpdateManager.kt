@@ -40,7 +40,7 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext null
                 
-                val body = response.use { it.body?.string() } ?: return@withContext null
+                val body = response.use { it.body()?.string() } ?: return@withContext null
                 val release = Gson().fromJson(body, ReleaseResponse::class.java)
                 
                 val latestVersion = release.tag_name.removePrefix("v")
@@ -90,7 +90,7 @@ object UpdateManager {
                 if (!response.isSuccessful) return@withContext false
                 
                 response.use { resp ->
-                    val responseBody = resp.body
+                    val responseBody = resp.body()
                     if (responseBody != null) {
                         val totalLength = responseBody.contentLength()
                         responseBody.byteStream().use { input ->
