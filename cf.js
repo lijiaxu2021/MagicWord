@@ -6,7 +6,7 @@ const APK_FILENAME = "MagicWordLatest.apk";
 
 // 两个关键的目标地址
 // 1. APK 直链 (Raw)
-const RAW_APK_URL = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${APK_FILENAME}`;
+const RAW_APK_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/main/MagicWordLatest.apk";
 // 2. GitHub API (Release Check)
 const GITHUB_API_BASE = "https://api.github.com";
 
