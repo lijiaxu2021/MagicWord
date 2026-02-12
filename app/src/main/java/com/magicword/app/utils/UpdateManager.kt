@@ -40,8 +40,6 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext null
                 
-                if (!response.isSuccessful) return@withContext null
-                
                 val body = response.use { it.body?.string() } ?: return@withContext null
                 val release = Gson().fromJson(body, ReleaseResponse::class.java)
                 
@@ -92,20 +90,21 @@ object UpdateManager {
                 if (!response.isSuccessful) return@withContext false
                 
                 response.use { resp ->
-                    val responseBody = resp.body ?: return@withContext false
-                    val totalLength = responseBody.contentLength()
-                    
-                    responseBody.byteStream().use { input ->
-                        FileOutputStream(destination).use { output ->
-                            val buffer = ByteArray(8 * 1024)
-                            var bytesRead: Int
-                            var totalRead: Long = 0
-                            
-                            while (input.read(buffer).also { bytesRead = it } != -1) {
-                                output.write(buffer, 0, bytesRead)
-                                totalRead += bytesRead
-                                if (totalLength > 0) {
-                                    onProgress((totalRead * 100 / totalLength).toInt())
+                    val responseBody = resp.body
+                    if (responseBody != null) {
+                        val totalLength = responseBody.contentLength()
+                        responseBody.byteStream().use { input ->
+                            FileOutputStream(destination).use { output ->
+                                val buffer = ByteArray(8 * 1024)
+                                var bytesRead: Int
+                                var totalRead: Long = 0
+                                
+                                while (input.read(buffer).also { bytesRead = it } != -1) {
+                                    output.write(buffer, 0, bytesRead)
+                                    totalRead += bytesRead
+                                    if (totalLength > 0) {
+                                        onProgress((totalRead * 100 / totalLength).toInt())
+                                    }
                                 }
                             }
                         }
