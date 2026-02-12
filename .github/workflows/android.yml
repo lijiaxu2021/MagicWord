@@ -76,7 +76,10 @@ jobs:
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
+        # Ensure we have the latest changes before modifying and pushing
+        git pull --rebase origin main
         cp app/build/outputs/apk/release/app-release.apk MagicWordLatest.apk
         git add MagicWordLatest.apk
         git commit -m "Update MagicWordLatest.apk [skip ci]" || echo "No changes to commit"
-        git push origin main
+        # Try pushing, if fails, pull again and push (simple retry)
+        git push origin main || (git pull --rebase origin main && git push origin main)
