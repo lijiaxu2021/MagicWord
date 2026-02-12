@@ -1,7 +1,6 @@
 package com.magicword.app.utils
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -10,64 +9,57 @@ import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 object NoticeManager {
-    private const val PROXY_BASE_URL = "https://mag.upxuu.com"
-    private const val NOTICE_URL = "$PROXY_BASE_URL/notice.json"
-    private const val PREF_KEY_LAST_NOTICE_ID = "last_notice_id"
-
+    private const val NOTICE_URL = "https://mag.upxuu.com/notice.json"
+    
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
     data class Notice(
-        val id: Int,
+        val id: String,
         val title: String,
-        val content: String
+        val content: String,
+        val version: String // Optional: show only for specific versions
     )
 
     suspend fun checkNotice(context: Context): Notice? {
+        val notice = fetchNotice() ?: return null
+        
+        // Check if already shown
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val lastReadId = prefs.getString("last_read_notice_id", "")
+        
+        if (notice.id == lastReadId) {
+            return null
+        }
+        
+        return notice
+    }
+
+    suspend fun getLatestNotice(): Notice? {
+        return fetchNotice()
+    }
+
+    private suspend fun fetchNotice(): Notice? {
         return withContext(Dispatchers.IO) {
             try {
                 val request = Request.Builder().url(NOTICE_URL).build()
                 val response = client.newCall(request).execute()
-
+                
                 if (!response.isSuccessful) return@withContext null
-
+                
                 val bodyStr = response.body()?.string() ?: return@withContext null
-                val notice = Gson().fromJson(bodyStr, Notice::class.java)
-
-                if (notice != null) {
-                    val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-                    val lastId = prefs.getInt(PREF_KEY_LAST_NOTICE_ID, -1)
-                    if (notice.id > lastId) {
-                        return@withContext notice
-                    }
-                }
-                null
+                Gson().fromJson(bodyStr, Notice::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
             }
         }
     }
-    
-    // Fetch latest notice regardless of ID (for Settings screen)
-    suspend fun getLatestNotice(): Notice? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val request = Request.Builder().url(NOTICE_URL).build()
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) return@withContext null
-                val bodyStr = response.body()?.string() ?: return@withContext null
-                Gson().fromJson(bodyStr, Notice::class.java)
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
 
-    fun markNoticeAsRead(context: Context, noticeId: Int) {
+    fun markNoticeAsRead(context: Context, id: String) {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        prefs.edit().putInt(PREF_KEY_LAST_NOTICE_ID, noticeId).apply()
+        prefs.edit().putString("last_read_notice_id", id).apply()
     }
 }

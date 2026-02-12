@@ -1,5 +1,6 @@
 {
-  "id": 1,
-  "title": "欢迎使用 MagicWord",
-  "content": "感谢您使用 MagicWord！这是您的第一条通知。我们会在这里发布重要更新和公告。"
+  "id": "notice_001",
+  "title": "Welcome to MagicWord",
+  "content": "Thank you for using MagicWord! We have fixed several bugs and improved stability in this version.",
+  "version": "all"
 }

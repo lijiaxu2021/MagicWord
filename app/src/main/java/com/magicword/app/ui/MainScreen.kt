@@ -76,6 +76,8 @@ fun MainScreen() {
     val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     var isLoggedIn by remember { mutableStateOf(AuthManager.isLoggedIn(context)) }
 
+    val scope = rememberCoroutineScope() // Moved up
+
     // Auto-update check
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<com.magicword.app.utils.UpdateManager.UpdateInfo?>(null) }
@@ -133,7 +135,7 @@ fun MainScreen() {
                     if (isDownloading) {
                         androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(16.dp))
                         androidx.compose.material3.LinearProgressIndicator(
-                            progress = { downloadProgress / 100f },
+                            progress = downloadProgress / 100f, // Fixed: passed as value, not lambda
                             modifier = Modifier.fillMaxSize()
                         )
                         Text("Downloading... $downloadProgress%")
@@ -182,14 +184,7 @@ fun MainScreen() {
     val currentLibraryId by viewModel.currentLibraryId.collectAsState()
     val currentLibraryName = libraries.find { it.id == currentLibraryId }?.name ?: "默认词库"
 
-    // Bypass Auth for now
-    // if (!isLoggedIn) {
-    //     AuthScreen(onLoginSuccess = { isLoggedIn = true })
-    //     return
-    // }
-
     val pagerState = rememberPagerState(pageCount = { 4 }) // Updated count
-    val scope = rememberCoroutineScope()
     
     // Navigation items
     val items = listOf(
@@ -200,9 +195,6 @@ fun MainScreen() {
     )
 
     // Observe Jump Event to switch tabs
-    // MainScreen doesn't need to observe this if WordsScreen handles it.
-    // WordsScreen now listens to pendingJumpWordId.
-    // However, if we are on a different tab (e.g. Test), we might want to switch to Words tab.
     val pendingJumpWordId by viewModel.pendingJumpWordId.collectAsState()
     
     LaunchedEffect(pendingJumpWordId) {
