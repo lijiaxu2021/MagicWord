@@ -1,90 +1,120 @@
 
-// 配置常量
-const GITHUB_OWNER = "lijiaxu2021";
-const GITHUB_REPO = "MagicWord";
-const APK_FILENAME = "MagicWordLatest.apk";
+// 目标域名配置
+const TARGET_DOMAIN = 'api.github.com'; // 默认代理 GitHub API
+const RAW_DOMAIN = 'raw.githubusercontent.com'; // Raw 文件域名
+const WORKER_DOMAIN = 'mag.upxuu.com'; // 您的 Worker 域名
 
-// 两个关键的目标地址
-// 1. APK 直链 (Raw)
+// 微信验证文件配置 (如果需要的话，保留备用)
+// const WECHAT_VERIFICATION = { 
+//     filename: '7273aaca28e7f83424eab44540cf62f4.txt', 
+//     content: 'daa7c3f8647aa96917e84c780822fe00473cea89' 
+// }; 
+
+// APK 直链配置
 const RAW_APK_URL = "https://raw.githubusercontent.com/lijiaxu2021/MagicWord/main/MagicWordLatest.apk";
-// 2. GitHub API (Release Check)
-const GITHUB_API_BASE = "https://api.github.com";
 
-async function handleRequest(request) {
-  const url = new URL(request.url);
-  const path = url.pathname;
-  
-  // ---------------------------------------------------------
-  // 1. APK 下载请求 (Raw File Proxy)
-  // ---------------------------------------------------------
-  // 匹配 /MagicWordLatest.apk 或 /latest/MagicWord.apk
-  if (path === `/${APK_FILENAME}` || path === "/latest/MagicWord.apk") {
-    // 转发请求到 GitHub Raw
-    const response = await fetch(RAW_APK_URL, {
-      headers: { 
-        "User-Agent": "MagicWord-Updater" // 防止 GitHub 拦截
-      }
-    });
+addEventListener('fetch', event => { 
+    event.respondWith(handleRequest(event.request, event)); 
+}); 
 
-    if (response.status === 200) {
-      // 成功获取文件，重写响应头，强制浏览器下载
-      const newHeaders = new Headers(response.headers);
-      newHeaders.set("Content-Type", "application/vnd.android.package-archive");
-      newHeaders.set("Content-Disposition", `attachment; filename="${APK_FILENAME}"`);
-      // 允许跨域
-      newHeaders.set("Access-Control-Allow-Origin", "*");
-      
-      return new Response(response.body, { 
-        status: 200, 
-        headers: newHeaders 
-      });
-    } else {
-      return new Response(`File not found on GitHub Raw.\nURL: ${RAW_APK_URL}\nStatus: ${response.status}`, { status: 404 });
+async function handleRequest(request, event) { 
+    const url = new URL(request.url); 
+    const userAgent = request.headers.get('User-Agent') || ''; 
+     
+    // 1. APK 直链下载 (最优先)
+    if (url.pathname === `/MagicWordLatest.apk` || url.pathname === "/latest/MagicWord.apk") { 
+        return fetchRawApk();
     }
-  }
+     
+    // 2. API 代理逻辑
+    // 只有路径以 /api/ 开头的才被认为是 API 请求 (客户端约定)
+    if (url.pathname.startsWith('/api/')) {
+        // 去掉 /api 前缀，代理到 api.github.com
+        const newPath = url.pathname.replace(/^\/api/, '');
+        const targetUrl = `https://${TARGET_DOMAIN}${newPath}${url.search}`;
+        
+        return proxyRequest(request, targetUrl, TARGET_DOMAIN);
+    }
 
-  // ---------------------------------------------------------
-  // 2. API 请求转发 (Release Check)
-  // ---------------------------------------------------------
-  // 客户端请求格式: /api/repos/{owner}/{repo}/releases/latest
-  if (path.startsWith("/api/")) {
-    // 去掉前缀 /api，还原为 GitHub API 的路径
-    // 例如 /api/repos/lijiaxu2021/MagicWord/releases/latest -> /repos/lijiaxu2021/MagicWord/releases/latest
-    const apiPath = path.replace(/^\/api/, "");
-    const targetUrl = GITHUB_API_BASE + apiPath + url.search;
+    // 3. 兜底/默认页面
+    return new Response("MagicWord Proxy Service is Running.", { status: 200 });
+} 
 
-    // 构造新请求
-    const headers = new Headers(request.headers);
-    headers.delete("Host");
-    headers.delete("Referer");
-    // GitHub API 要求 User-Agent
-    headers.set("User-Agent", "MagicWord-Proxy");
-    // 移除敏感信息
-    headers.delete("Authorization");
-    headers.delete("Cookie");
+async function fetchRawApk() {
+    try {
+        const response = await fetch(RAW_APK_URL, {
+            headers: { 
+                "User-Agent": "MagicWord-Updater" // 防止 GitHub 拦截
+            }
+        });
 
-    const response = await fetch(targetUrl, {
-      method: request.method,
-      headers: headers,
-      body: request.body
-    });
-
-    // 处理响应
-    const newHeaders = new Headers(response.headers);
-    newHeaders.set("Access-Control-Allow-Origin", "*"); // 允许跨域调用 API
-
-    return new Response(response.body, {
-      status: response.status,
-      headers: newHeaders
-    });
-  }
-
-  // ---------------------------------------------------------
-  // 3. 兜底响应
-  // ---------------------------------------------------------
-  return new Response("MagicWord Proxy Service is Running.\nAvailable Endpoints:\n- /MagicWordLatest.apk\n- /api/repos/...", { status: 200 });
+        if (response.ok) {
+            const newHeaders = new Headers(response.headers);
+            newHeaders.set("Content-Type", "application/vnd.android.package-archive");
+            newHeaders.set("Content-Disposition", 'attachment; filename="MagicWordLatest.apk"');
+            newHeaders.set("Access-Control-Allow-Origin", "*");
+            return new Response(response.body, { status: 200, headers: newHeaders });
+        } else {
+            return new Response(`File not found on GitHub Raw (Status: ${response.status})`, { status: 404 });
+        }
+    } catch (error) {
+        return new Response(`Proxy Error: ${error.message}`, { status: 502 });
+    }
 }
 
-addEventListener("fetch", event => {
-  event.respondWith(handleRequest(event.request));
-});
+async function proxyRequest(request, targetUrl, targetHost) {
+    const requestHeaders = new Headers(request.headers); 
+    requestHeaders.set('Host', targetHost); 
+    requestHeaders.set('User-Agent', 'MagicWord-Proxy'); // 统一 UA
+    requestHeaders.set('X-Forwarded-Host', targetHost); 
+    requestHeaders.set('X-Forwarded-Proto', 'https'); 
+    
+    // 移除敏感/干扰头
+    requestHeaders.delete('cf-connecting-ip'); 
+    requestHeaders.delete('cf-ray'); 
+    requestHeaders.delete('cf-visitor'); 
+    requestHeaders.delete('Authorization'); 
+    requestHeaders.delete('Cookie');
+     
+    try { 
+        const response = await fetch(targetUrl, { 
+            method: request.method, 
+            headers: requestHeaders, 
+            body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.clone().arrayBuffer() : undefined, 
+            redirect: 'follow' 
+        }); 
+         
+        return processResponse(response); 
+         
+    } catch (error) { 
+        console.error('Proxy error:', error); 
+        return new Response(`Proxy Error: ${error.message}`, { 
+            status: 502, 
+            headers: { 'Content-Type': 'text/plain' } 
+        }); 
+    } 
+} 
+
+async function processResponse(response) { 
+    const responseHeaders = new Headers(response.headers); 
+     
+    // 允许跨域
+    responseHeaders.set('Access-Control-Allow-Origin', '*'); 
+     
+    // 移除可能导致问题的安全头
+    const problematicHeaders = [ 
+        'content-security-policy', 
+        'content-security-policy-report-only', 
+        'x-frame-options', 
+        'strict-transport-security', 
+        'x-content-type-options', 
+        'permissions-policy' 
+    ]; 
+     
+    problematicHeaders.forEach(header => responseHeaders.delete(header)); 
+     
+    return new Response(response.body, { 
+        status: response.status, 
+        headers: responseHeaders 
+    }); 
+}
