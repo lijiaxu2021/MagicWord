@@ -41,7 +41,7 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext null
                 
-                val bodyStr = response.use { it.body?.string() } ?: return@withContext null
+                val bodyStr = response.body()?.string() ?: return@withContext null
                 val release = Gson().fromJson(bodyStr, ReleaseResponse::class.java)
                 
                 val latestVersion = release.tag_name.removePrefix("v")
@@ -106,6 +106,7 @@ object UpdateManager {
                                 onProgress((totalRead * 100 / totalLength).toInt())
                             }
                         }
+                        onProgress(100)
                     }
                 }
                 true
