@@ -612,10 +612,11 @@ fun WordsScreen(
             )
         }
     }
+    }
 }
 
 @Composable
-fun TestTypeSelectionDialog(onDismiss: () -> Unit, onConfirm: (LibraryViewModel.TestType) -> Unit) {
+private fun TestTypeSelectionDialog(onDismiss: () -> Unit, onConfirm: (LibraryViewModel.TestType) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("选择测试类型") },
