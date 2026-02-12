@@ -3,9 +3,11 @@
 > 🚀 **一款基于 Jetpack Compose 和 AI 驱动的现代化 Android 背词应用。**  
 > 沉浸式学习体验，智能语义分析，让记单词变得简单而高效。
 
-![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-Active-success.svg)
+
+[English Version](README_EN.md) | [中文版](README.md)
 
 ---
 
