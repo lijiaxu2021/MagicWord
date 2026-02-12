@@ -74,7 +74,8 @@ com.magicword.app
 ### 安装步骤
 
 1.  **下载 APK**
-    前往 [Releases](https://github.com/lijiaxu2011/MagicWord/releases) 页面下载最新版本。
+    - **最新版本 (v0.0.4)**: [点击下载 (国内加速)](https://mag.upxuu.com/lijiaxu2011/MagicWord/releases/download/v0.0.4/MagicWord-v0.0.4.apk)
+    - **所有版本**: [查看发布页 (国内加速)](https://mag.upxuu.com/lijiaxu2011/MagicWord/releases)
 
 2.  **配置 API Key**
     在“设置”页面填入您的 SiliconFlow API Key 即可开始使用 AI 功能。
