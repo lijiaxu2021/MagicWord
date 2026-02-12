@@ -76,6 +76,72 @@ fun MainScreen() {
     val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
     var isLoggedIn by remember { mutableStateOf(AuthManager.isLoggedIn(context)) }
 
+    // Auto-update check
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<com.magicword.app.utils.UpdateManager.UpdateInfo?>(null) }
+    var downloadProgress by remember { mutableIntStateOf(0) }
+    var isDownloading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val info = com.magicword.app.utils.UpdateManager.checkUpdate(com.magicword.app.BuildConfig.VERSION_NAME)
+        if (info != null && info.hasUpdate) {
+            updateInfo = info
+            showUpdateDialog = true
+        }
+    }
+
+    if (showUpdateDialog && updateInfo != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { 
+                if (!isDownloading) showUpdateDialog = false 
+            },
+            title = { Text("New Version Available: v${updateInfo!!.version}") },
+            text = {
+                Column {
+                    Text(updateInfo!!.releaseNotes)
+                    if (isDownloading) {
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(16.dp))
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { downloadProgress / 100f },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text("Downloading... $downloadProgress%")
+                    }
+                }
+            },
+            confirmButton = {
+                if (!isDownloading) {
+                    androidx.compose.material3.TextButton(onClick = {
+                        isDownloading = true
+                        scope.launch {
+                            val file = java.io.File(context.externalCacheDir, "update.apk")
+                            val success = com.magicword.app.utils.UpdateManager.downloadApk(
+                                updateInfo!!.downloadUrl,
+                                file
+                            ) { progress ->
+                                downloadProgress = progress
+                            }
+                            if (success) {
+                                com.magicword.app.utils.UpdateManager.installApk(context, file)
+                            }
+                            isDownloading = false
+                            showUpdateDialog = false
+                        }
+                    }) {
+                        Text("Update Now")
+                    }
+                }
+            },
+            dismissButton = {
+                if (!isDownloading) {
+                    androidx.compose.material3.TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("Later")
+                    }
+                }
+            }
+        )
+    }
+
     // Observe current library name for title
     val database = AppDatabase.getDatabase(context)
     val viewModel: LibraryViewModel = viewModel(
