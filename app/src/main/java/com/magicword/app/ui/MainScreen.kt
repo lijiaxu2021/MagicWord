@@ -212,6 +212,11 @@ fun MainScreen() {
             onNavigateToLogs = { currentOverlay = "logs" },
             onNavigateToAbout = { currentOverlay = "about" }
         )
+    } else if (currentOverlay == "library_manager") {
+        LibraryManagerScreen(
+            viewModel = viewModel,
+            onBack = { currentOverlay = null }
+        )
     } else if (currentOverlay == "logs") {
         LogListScreen(onBack = { currentOverlay = "settings" })
     } else if (currentOverlay == "about") {

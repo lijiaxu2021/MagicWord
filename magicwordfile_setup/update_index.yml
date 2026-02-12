@@ -1,0 +1,61 @@
+name: Update Library Index
+
+on:
+  push:
+    paths:
+      - '**/info.json'
+
+permissions:
+  contents: write
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Generate Index
+        run: |
+          python3 <<EOF
+          import os
+          import json
+
+          index = []
+          base_url = "https://mag.upxuu.com/magicwordfile" # Can be used if proxy supports direct file access, or raw github
+          # Use Raw GitHub for stability:
+          raw_base = "https://raw.githubusercontent.com/lijiaxu2021/magicwordfile/main"
+
+          for item in os.listdir('.'):
+              if os.path.isdir(item) and not item.startswith('.'):
+                  info_path = os.path.join(item, 'info.json')
+                  if os.path.exists(info_path):
+                      try:
+                          with open(info_path, 'r', encoding='utf-8') as f:
+                              data = json.load(f)
+                              # Add direct download URL
+                              data['downloadUrl'] = f"{raw_base}/{item}/library.json"
+                              index.append(data)
+                      except Exception as e:
+                          print(f"Error processing {info_path}: {e}")
+
+          # Sort by timestamp descending (newest first)
+          index.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+
+          with open('index.json', 'w', encoding='utf-8') as f:
+              json.dump(index, f, indent=2, ensure_ascii=False)
+          
+          print(f"Generated index with {len(index)} items.")
+          EOF
+          
+      - name: Commit and Push
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add index.json
+          git commit -m "Update index.json [skip ci]" || echo "No changes to commit"
+          git push

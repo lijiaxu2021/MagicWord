@@ -53,9 +53,24 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import android.speech.tts.TextToSpeech
 import java.util.Locale
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import org.json.JSONObject
+import com.magicword.app.data.OnlineLibrary
 
 class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreferences) : ViewModel() {
     
+    // OkHttpClient for direct network calls (Online Library)
+    private val client = OkHttpClient()
+
+    private val _onlineLibraries = MutableStateFlow<List<OnlineLibrary>>(emptyList())
+    val onlineLibraries: StateFlow<List<OnlineLibrary>> = _onlineLibraries.asStateFlow()
+
+    private val _isNetworkLoading = MutableStateFlow(false)
+    val isNetworkLoading: StateFlow<Boolean> = _isNetworkLoading.asStateFlow()
+
     // TTS Engine
     private var tts: TextToSpeech? = null
     private val _isTtsReady = MutableStateFlow(false)
@@ -944,6 +959,99 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
             // 2. Set pending jump ID
             _pendingJumpWordId.value = wordId
         }
+    }
+    
+    // Online Library Functions
+    fun fetchOnlineLibraries() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isNetworkLoading.value = true
+            try {
+                val request = Request.Builder().url("https://mag.upxuu.com/library/index.json").build()
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body()?.string()
+                    val type = object : TypeToken<List<OnlineLibrary>>() {}.type
+                    val list = Gson().fromJson<List<OnlineLibrary>>(json, type)
+                    _onlineLibraries.value = list ?: emptyList()
+                } else {
+                     LogUtil.logError("Network", "Fetch Online Failed: ${response.code()}", null)
+                     _onlineLibraries.value = emptyList()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                LogUtil.logError("Network", "Fetch Online Error: ${e.message}", e)
+                _onlineLibraries.value = emptyList()
+            } finally {
+                _isNetworkLoading.value = false
+            }
+        }
+    }
+
+    fun uploadLibraryPackage(name: String, description: String, libraryIds: List<Int>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isNetworkLoading.value = true
+            _importLogs.value = listOf("正在上传词库: $name...")
+            try {
+                 // 1. Generate JSON
+                 val jsonContent = getLibraryJson(libraryIds)
+                 // 2. Base64 Encode
+                 val base64Content = android.util.Base64.encodeToString(jsonContent.toByteArray(), android.util.Base64.NO_WRAP)
+                 
+                 // 3. Create Request Body
+                 val jsonBody = JSONObject()
+                 jsonBody.put("name", name)
+                 jsonBody.put("description", description)
+                 jsonBody.put("contentBase64", base64Content)
+                 
+                 val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonBody.toString())
+                 
+                 val request = Request.Builder()
+                     .url("https://mag.upxuu.com/library/upload")
+                     .post(requestBody)
+                     .build()
+                     
+                 val response = client.newCall(request).execute()
+                 if (response.isSuccessful) {
+                     _importLogs.value = listOf("✅ 上传成功！等待审核/更新。")
+                     // Refresh online list?
+                     fetchOnlineLibraries()
+                 } else {
+                     val err = response.body()?.string()
+                     _importLogs.value = listOf("❌ 上传失败 (${response.code()}): $err")
+                 }
+            } catch (e: Exception) {
+                 _importLogs.value = listOf("❌ 上传错误: ${e.message}")
+            } finally {
+                _isNetworkLoading.value = false
+            }
+        }
+    }
+
+    fun downloadAndImportLibrary(library: OnlineLibrary) {
+         viewModelScope.launch(Dispatchers.IO) {
+             _isNetworkLoading.value = true
+             _importLogs.value = listOf("正在下载: ${library.name}...")
+             try {
+                 val request = Request.Builder().url(library.downloadUrl).build()
+                 val response = client.newCall(request).execute()
+                 if (response.isSuccessful) {
+                     val json = response.body()?.string()
+                     if (json != null) {
+                         // Switch to Main thread for import logic (importLibraryJson handles scope)
+                         withContext(Dispatchers.Main) {
+                             importLibraryJson(json)
+                         }
+                     }
+                 } else {
+                     _importLogs.value = listOf("❌ 下载失败: ${response.code()}")
+                 }
+             } catch (e: Exception) {
+                 e.printStackTrace()
+                 _importLogs.value = listOf("❌ 下载错误: ${e.message}")
+             } finally {
+                 _isNetworkLoading.value = false
+             }
+         }
     }
 }
 
