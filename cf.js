@@ -81,6 +81,7 @@ async function handleRequest(request) {
   // 1. Raw File Proxy (优先处理 MagicWordLatest.apk)
   // ---------------------------------------------------------
   if (path === `/${APK_FILENAME}` || path === "/latest/MagicWord.apk") {
+    // https://raw.githubusercontent.com/lijiaxu2011/MagicWord/main/MagicWordLatest.apk
     const rawUrl = `${GITHUB_RAW_BASE}/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${APK_FILENAME}`;
     const response = await fetch(rawUrl, {
       headers: { "User-Agent": "MagicWord-Updater" }
