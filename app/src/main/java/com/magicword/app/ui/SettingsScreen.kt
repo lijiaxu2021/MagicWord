@@ -23,6 +23,8 @@ import com.magicword.app.utils.LogUtil
 import java.io.File
 import com.magicword.app.data.AppDatabase
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.magicword.app.utils.UpdateManager
+import com.magicword.app.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +32,44 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
     var isLogEnabled by remember { mutableStateOf(prefs.getBoolean("enable_log", true)) }
+    var isAutoUpdateEnabled by remember { mutableStateOf(prefs.getBoolean("auto_update", true)) }
     
+    // Update State
+    val scope = rememberCoroutineScope()
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var showNoUpdateMessage by remember { mutableStateOf(false) }
+
+    fun checkUpdate() {
+        scope.launch {
+            isCheckingUpdate = true
+            showNoUpdateMessage = false
+            updateInfo = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+            isCheckingUpdate = false
+            
+            if (updateInfo != null && updateInfo!!.hasUpdate) {
+                showUpdateDialog = true
+            } else {
+                showNoUpdateMessage = true
+            }
+        }
+    }
+
+    if (showUpdateDialog && updateInfo != null) {
+        UpdateDialog(
+            updateInfo = updateInfo!!,
+            onDismiss = { showUpdateDialog = false },
+            onUpdate = {
+                // Handle download and install
+                // For simplicity, open browser with download URL (UpdateManager returns Proxy URL)
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(updateInfo!!.downloadUrl))
+                context.startActivity(intent)
+                showUpdateDialog = false
+            }
+        )
+    }
+
     // Config State
     var apiKey by remember { mutableStateOf(AppConfig.apiKey) }
     var modelName by remember { mutableStateOf(AppConfig.modelName) }
@@ -48,7 +87,10 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
     fun saveAllConfig() {
         AppConfig.saveConfig(apiKey, modelName, null, userPersona, saveLocationId)
         // Also update log pref
-        prefs.edit().putBoolean("enable_log", isLogEnabled).apply()
+        prefs.edit()
+            .putBoolean("enable_log", isLogEnabled)
+            .putBoolean("auto_update", isAutoUpdateEnabled)
+            .apply()
         LogUtil.setLogEnabled(isLogEnabled)
     }
     
@@ -179,6 +221,44 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
                 modifier = Modifier.clickable { onNavigateToLogs() },
                 trailingContent = { Text("查看 >") }
             )
+            
+            Divider(modifier = Modifier.padding(vertical = 16.dp))
+            
+            Text("更新与关于", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
+
+            // Auto Update Switch
+            ListItem(
+                headlineContent = { Text("自动检查更新") },
+                supportingContent = { Text("每次启动时检查新版本") },
+                trailingContent = {
+                    Switch(
+                        checked = isAutoUpdateEnabled,
+                        onCheckedChange = { isAutoUpdateEnabled = it }
+                    )
+                }
+            )
+
+            // Check Update
+            ListItem(
+                headlineContent = { Text("检查更新") },
+                supportingContent = { 
+                    if (isCheckingUpdate) {
+                        Text("正在检查...")
+                    } else if (showNoUpdateMessage) {
+                        Text("当前已是最新版本 (v${BuildConfig.VERSION_NAME})")
+                    } else {
+                        Text("当前版本: v${BuildConfig.VERSION_NAME}")
+                    }
+                },
+                modifier = Modifier.clickable { checkUpdate() },
+                trailingContent = { 
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("检查")
+                    }
+                }
+            )
 
             // About
             ListItem(
@@ -202,6 +282,29 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
             }
         }
     }
+}
+
+@Composable
+fun UpdateDialog(updateInfo: UpdateManager.UpdateInfo, onDismiss: () -> Unit, onUpdate: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("发现新版本 v${updateInfo.version}") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(updateInfo.releaseNotes)
+            }
+        },
+        confirmButton = {
+            Button(onClick = onUpdate) {
+                Text("立即更新")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("稍后")
+            }
+        }
+    )
 }
 
 @Composable

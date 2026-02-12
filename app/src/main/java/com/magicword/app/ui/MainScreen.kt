@@ -63,6 +63,9 @@ import kotlinx.coroutines.delay
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.magicword.app.data.AppDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import android.content.Intent
 
 import androidx.compose.material.icons.filled.School
 
