@@ -49,13 +49,17 @@ jobs:
         name: MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}
         path: app/build/outputs/apk/release/app-release.apk
 
+    - name: Rename APK
+      run: |
+        mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}.apk
+
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.get_version.outputs.VERSION_NAME }}
         name: Release v${{ steps.get_version.outputs.VERSION_NAME }}
-        files: app/build/outputs/apk/release/app-release.apk
+        files: app/build/outputs/apk/release/MagicWord-v${{ steps.get_version.outputs.VERSION_NAME }}.apk
         draft: false
         prerelease: false
       env:
