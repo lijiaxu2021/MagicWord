@@ -379,7 +379,7 @@ fun OnlineLibraryItem(library: OnlineLibrary, onDownload: () -> Unit) {
             )
             
             // Tags
-            if (library.tags.isNotEmpty()) {
+            if (!library.tags.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     library.tags.forEach { tag ->

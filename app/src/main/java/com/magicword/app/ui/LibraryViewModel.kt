@@ -1064,7 +1064,7 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                                     lib.description.contains(currentSearchQuery!!, ignoreCase = true)
                             
                             val matchesTag = currentSearchTag.isNullOrBlank() || 
-                                    lib.tags.any { it.equals(currentSearchTag, ignoreCase = true) }
+                                    (lib.tags != null && lib.tags.any { it.equals(currentSearchTag, ignoreCase = true) })
                                     
                             matchesQuery && matchesTag
                         }

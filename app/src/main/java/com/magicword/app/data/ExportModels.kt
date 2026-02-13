@@ -27,6 +27,6 @@ data class OnlineLibrary(
     val description: String,
     val timestamp: Long,
     val author: String,
-    val tags: List<String> = emptyList(), // Added tags support
+    val tags: List<String>? = emptyList(), // Added tags support, nullable for Gson safety
     val downloadUrl: String // Provided by index.json (or constructed)
 )
