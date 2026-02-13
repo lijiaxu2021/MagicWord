@@ -2,6 +2,7 @@ package com.magicword.app.ui
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -221,8 +222,39 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
                 supportingContent = { Text(if(isCheckingUpdate) "Checking..." else "v${BuildConfig.VERSION_NAME}") },
                 modifier = Modifier.clickable { checkUpdate() }
             )
+
+            Divider(modifier = Modifier.padding(vertical = 16.dp))
+            
+            // About & Links
+            Text("关于与支持", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
+            
+            ListItem(
+                headlineContent = { Text("使用文档") },
+                supportingContent = { Text("查看详细使用说明") },
+                modifier = Modifier.clickable { 
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://magicword.upxuu.com/")))
+                },
+                trailingContent = { Icon(Icons.Default.ArrowBack, "Link", modifier = Modifier.rotate(180f)) } // Arrow right-ish
+            )
+            ListItem(
+                headlineContent = { Text("GitHub 仓库") },
+                supportingContent = { Text("开源项目主页") },
+                modifier = Modifier.clickable { 
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/lijiaxu2021/MagicWord")))
+                },
+                trailingContent = { Icon(Icons.Default.ArrowBack, "Link", modifier = Modifier.rotate(180f)) }
+            )
              ListItem(
-                headlineContent = { Text("关于") },
+                headlineContent = { Text("开发者博客") },
+                supportingContent = { Text("UpXuu") },
+                modifier = Modifier.clickable { 
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://upxuu.com")))
+                },
+                trailingContent = { Icon(Icons.Default.ArrowBack, "Link", modifier = Modifier.rotate(180f)) }
+            )
+            
+             ListItem(
+                headlineContent = { Text("关于本应用") },
                 modifier = Modifier.clickable { onNavigateToAbout() },
                 trailingContent = { Text("查看 >") }
             )
