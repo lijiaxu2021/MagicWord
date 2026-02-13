@@ -190,8 +190,9 @@ fun OnlineLibraryTab(viewModel: LibraryViewModel) {
     val isLoading by viewModel.isNetworkLoading.collectAsState()
     val importLogs by viewModel.importLogs.collectAsState()
 
+    // 初始加载 (Refresh)
     LaunchedEffect(Unit) {
-        viewModel.fetchOnlineLibraries()
+        viewModel.fetchOnlineLibraries(isRefresh = true)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -212,18 +213,37 @@ fun OnlineLibraryTab(viewModel: LibraryViewModel) {
 
              if (onlineLibraries.isEmpty() && !isLoading) {
                  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                     Text("暂无在线词库或加载失败")
-                     Button(onClick = { viewModel.fetchOnlineLibraries() }, modifier = Modifier.padding(top = 8.dp)) {
-                         Text("重试")
+                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("暂无在线词库或加载失败")
+                        Button(onClick = { viewModel.fetchOnlineLibraries(isRefresh = true) }, modifier = Modifier.padding(top = 8.dp)) {
+                            Text("重试")
+                        }
                      }
                  }
              } else {
                  LazyColumn(modifier = Modifier.fillMaxSize()) {
-                     items(onlineLibraries) { lib ->
+                     items(onlineLibraries.size) { index ->
+                         val lib = onlineLibraries[index]
                          OnlineLibraryItem(
                              library = lib,
                              onDownload = { viewModel.downloadAndImportLibrary(lib) }
                          )
+                         
+                         // 简单的加载更多触发机制：当滑动到倒数第3个时触发加载
+                         if (index >= onlineLibraries.size - 3 && !isLoading) {
+                             LaunchedEffect(Unit) {
+                                 viewModel.loadMoreOnlineLibraries()
+                             }
+                         }
+                     }
+                     
+                     // 底部加载指示器
+                     if (isLoading && onlineLibraries.isNotEmpty()) {
+                         item {
+                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                             }
+                         }
                      }
                  }
              }
@@ -238,25 +258,43 @@ fun OnlineLibraryItem(library: OnlineLibrary, onDownload: () -> Unit) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(library.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text(date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                Text(
+                    text = library.name, 
+                    style = MaterialTheme.typography.titleMedium, 
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = date, 
+                    style = MaterialTheme.typography.labelSmall, 
+                    color = MaterialTheme.colorScheme.outline
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(library.description, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = library.description, 
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 3
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("By: ${library.author}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+            Text(
+                text = "By: ${library.author}", 
+                style = MaterialTheme.typography.labelSmall, 
+                color = MaterialTheme.colorScheme.secondary
+            )
             
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = onDownload,
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Icon(Icons.Default.Download, null)
+                Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("下载并导入")
             }

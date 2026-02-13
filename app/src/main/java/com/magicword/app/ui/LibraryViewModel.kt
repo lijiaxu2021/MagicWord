@@ -962,29 +962,67 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
     }
     
     // Online Library Functions
-    fun fetchOnlineLibraries() {
+    private var currentPage = 0
+    private var totalPages = 1
+    private var isLoadingMore = false
+
+    fun fetchOnlineLibraries(isRefresh: Boolean = false) {
+        if (isRefresh) {
+            currentPage = 0
+            totalPages = 1
+            _onlineLibraries.value = emptyList()
+        }
+        
+        if (isLoadingMore || currentPage >= totalPages) return
+
         viewModelScope.launch(Dispatchers.IO) {
-            _isNetworkLoading.value = true
+            if (currentPage == 0) _isNetworkLoading.value = true
+            isLoadingMore = true
+            
             try {
-                val request = Request.Builder().url("https://mag.upxuu.com/library/index.json").build()
+                // 1. First fetch metadata if initial load
+                if (currentPage == 0) {
+                    val numRequest = Request.Builder().url("https://mag.upxuu.com/library/num.json?t=${System.currentTimeMillis()}").build()
+                    try {
+                        val numResponse = client.newCall(numRequest).execute()
+                        if (numResponse.isSuccessful) {
+                            val numJson = numResponse.body?.string()
+                            val numObj = JSONObject(numJson)
+                            totalPages = numObj.optInt("totalPages", 1)
+                        }
+                    } catch (e: Exception) {
+                        LogUtil.logError("Network", "Fetch Num Failed", e)
+                        // Fallback to 1 page if metadata fails
+                    }
+                }
+
+                // 2. Fetch current page index
+                val indexUrl = "https://mag.upxuu.com/library/index_${currentPage}.json?t=${System.currentTimeMillis()}"
+                val request = Request.Builder().url(indexUrl).build()
                 val response = client.newCall(request).execute()
+                
                 if (response.isSuccessful) {
-                    val json = response.body()?.string()
+                    val json = response.body?.string()
                     val type = object : TypeToken<List<OnlineLibrary>>() {}.type
-                    val list = Gson().fromJson<List<OnlineLibrary>>(json, type)
-                    _onlineLibraries.value = list ?: emptyList()
+                    val list = Gson().fromJson<List<OnlineLibrary>>(json, type) ?: emptyList()
+                    
+                    _onlineLibraries.value = _onlineLibraries.value + list
+                    currentPage++
                 } else {
-                     LogUtil.logError("Network", "Fetch Online Failed: ${response.code()}", null)
-                     _onlineLibraries.value = emptyList()
+                     LogUtil.logError("Network", "Fetch Online Page $currentPage Failed: ${response.code}", null)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtil.logError("Network", "Fetch Online Error: ${e.message}", e)
-                _onlineLibraries.value = emptyList()
             } finally {
                 _isNetworkLoading.value = false
+                isLoadingMore = false
             }
         }
+    }
+
+    fun loadMoreOnlineLibraries() {
+        fetchOnlineLibraries(isRefresh = false)
     }
 
     fun uploadLibraryPackage(name: String, description: String, libraryIds: List<Int>) {
