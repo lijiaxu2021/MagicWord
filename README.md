@@ -4,7 +4,7 @@
 >
 > 这是一个包含 Android 客户端、Cloudflare 服务端和 Git 数据仓库的完整生态系统。不仅是一个 App，更是一个去中心化的词库共享平台。
 
-![Version](https://img.shields.io/badge/version-0.0.19-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.20-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Cloudflare%20%7C%20GitHub-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
