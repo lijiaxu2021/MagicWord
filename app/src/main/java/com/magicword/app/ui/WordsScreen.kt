@@ -141,6 +141,8 @@ fun WordsScreen(
              if (index != -1) {
                  targetIndex = index
                  isListMode = false
+                 // Wait for Pager to enter composition/layout if switching modes
+                 kotlinx.coroutines.delay(100) 
                  pagerState.scrollToPage(index)
                  viewModel.clearGlobalSearchResult()
              }

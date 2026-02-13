@@ -118,9 +118,30 @@ object UpdateManager {
     }
 
     fun installApk(context: Context, file: File) {
+        // Android 8.0+ (API 26+) Permission Check
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val packageManager = context.packageManager
+            if (!packageManager.canRequestPackageInstalls()) {
+                // Request permission
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                    // Return here to let user grant permission first. 
+                    // Ideally we should have a callback, but for now this prevents the crash/failure.
+                    // The user will have to click update again or we rely on them returning.
+                    return 
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         val uri = androidx.core.content.FileProvider.getUriForFile(
             context,
-            "${context.packageName}.provider",
+            "${BuildConfig.APPLICATION_ID}.provider",
             file
         )
         val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -128,7 +149,11 @@ object UpdateManager {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private data class ReleaseResponse(
