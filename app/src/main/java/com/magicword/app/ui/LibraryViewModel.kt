@@ -180,6 +180,24 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
     )
     val studyLibraryIds: StateFlow<Set<Int>> = _studyLibraryIds.asStateFlow()
 
+    // Validate selected libraries on init
+    init {
+        viewModelScope.launch {
+            // Get all valid library IDs
+            val validLibraries = wordDao.getAllLibrariesSnapshot()
+            val validIds = validLibraries.map { it.id }.toSet()
+            
+            // Filter out invalid IDs from current selection
+            val currentSelected = _studyLibraryIds.value
+            val validatedSelected = currentSelected.filter { validIds.contains(it) }.toSet()
+            
+            if (currentSelected.size != validatedSelected.size) {
+                _studyLibraryIds.value = validatedSelected
+                saveStudyLibraryIds(validatedSelected)
+            }
+        }
+    }
+
     fun toggleStudyLibrary(libraryId: Int) {
         val current = _studyLibraryIds.value.toMutableSet()
         if (current.contains(libraryId)) {

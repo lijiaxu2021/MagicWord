@@ -15,6 +15,9 @@ interface WordDao {
     @Query("SELECT * FROM libraries")
     fun getAllLibraries(): Flow<List<Library>>
 
+    @Query("SELECT * FROM libraries")
+    suspend fun getAllLibrariesSnapshot(): List<Library>
+
     @Query("SELECT * FROM libraries WHERE id = :id")
     suspend fun getLibraryById(id: Int): Library?
 
