@@ -287,9 +287,9 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(latestNotice!!.title, style = MaterialTheme.typography.titleMedium)
+                        Text(latestNotice!!.title ?: "", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(latestNotice!!.content, style = MaterialTheme.typography.bodyMedium)
+                        Text(latestNotice!!.content ?: "", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

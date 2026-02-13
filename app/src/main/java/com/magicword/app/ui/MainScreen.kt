@@ -131,12 +131,12 @@ fun MainScreen() {
             title = { Text("New Version Available: v${updateInfo!!.version}") },
             text = {
                 Column {
-                    Text(updateInfo!!.releaseNotes)
+                    Text(updateInfo!!.releaseNotes ?: "New update available")
                     if (isDownloading) {
                         androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(16.dp))
                         androidx.compose.material3.LinearProgressIndicator(
-                            progress = downloadProgress / 100f, // Fixed: passed as value, not lambda
-                            modifier = Modifier.fillMaxSize()
+                            progress = { downloadProgress / 100f },
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Text("Downloading... $downloadProgress%")
                     }
@@ -149,7 +149,7 @@ fun MainScreen() {
                         scope.launch {
                             val file = java.io.File(context.externalCacheDir, "update.apk")
                             val success = com.magicword.app.utils.UpdateManager.downloadApk(
-                                updateInfo!!.downloadUrl,
+                                updateInfo!!.downloadUrl ?: "",
                                 file
                             ) { progress ->
                                 downloadProgress = progress
