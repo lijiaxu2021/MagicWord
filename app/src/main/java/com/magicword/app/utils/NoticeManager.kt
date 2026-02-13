@@ -17,15 +17,21 @@ object NoticeManager {
         .build()
 
     data class Notice(
-        val id: String,
-        val title: String,
-        val content: String,
-        val version: String // Optional: show only for specific versions
-    )
+        val title: String?,
+        val content: String?,
+        val versionCode: Int = 0,
+        val timestamp: Long = 0
+    ) {
+        // ID logic: Use timestamp as ID string
+        val id: String get() = timestamp.toString()
+    }
 
     suspend fun checkNotice(context: Context): Notice? {
         val notice = fetchNotice() ?: return null
         
+        // Validation: Must have title/content
+        if (notice.title.isNullOrBlank() || notice.content.isNullOrBlank()) return null
+
         // Check if already shown
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         val lastReadId = prefs.getString("last_read_notice_id", "")

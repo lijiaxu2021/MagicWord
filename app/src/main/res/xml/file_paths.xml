@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-files-path name="my_logs" path="logs/" />
+    <external-files-path name="external_files" path="." />
     <files-path name="internal_logs" path="logs_fallback/" />
 </paths>
