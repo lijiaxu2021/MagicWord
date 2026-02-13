@@ -986,7 +986,7 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                     try {
                         val numResponse = client.newCall(numRequest).execute()
                         if (numResponse.isSuccessful) {
-                            val numJson = numResponse.body?.string()
+                            val numJson = numResponse.body()?.string()
                             val numObj = JSONObject(numJson)
                             totalPages = numObj.optInt("totalPages", 1)
                         }
@@ -1002,14 +1002,14 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                 val response = client.newCall(request).execute()
                 
                 if (response.isSuccessful) {
-                    val json = response.body?.string()
+                    val json = response.body()?.string()
                     val type = object : TypeToken<List<OnlineLibrary>>() {}.type
                     val list = Gson().fromJson<List<OnlineLibrary>>(json, type) ?: emptyList()
                     
                     _onlineLibraries.value = _onlineLibraries.value + list
                     currentPage++
                 } else {
-                     LogUtil.logError("Network", "Fetch Online Page $currentPage Failed: ${response.code}", null)
+                     LogUtil.logError("Network", "Fetch Online Page $currentPage Failed: ${response.code()}", null)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
