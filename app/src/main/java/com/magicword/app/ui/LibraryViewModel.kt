@@ -1147,7 +1147,7 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                  val request = Request.Builder().url(library.downloadUrl).build()
                  val response = client.newCall(request).execute()
                  if (response.isSuccessful) {
-                     val json = response.body()?.string()
+                     val json = response.body?.string()
                      if (json != null) {
                          // Switch to Main thread for import logic (importLibraryJson handles scope)
                          withContext(Dispatchers.Main) {
@@ -1155,7 +1155,7 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                          }
                      }
                  } else {
-                     _importLogs.value = listOf("❌ 下载失败: ${response.code()}")
+                     _importLogs.value = listOf("❌ 下载失败: ${response.code}")
                  }
              } catch (e: Exception) {
                  e.printStackTrace()
