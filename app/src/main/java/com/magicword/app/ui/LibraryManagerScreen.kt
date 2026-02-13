@@ -189,64 +189,156 @@ fun OnlineLibraryTab(viewModel: LibraryViewModel) {
     val onlineLibraries by viewModel.onlineLibraries.collectAsState()
     val isLoading by viewModel.isNetworkLoading.collectAsState()
     val importLogs by viewModel.importLogs.collectAsState()
+    val onlineTags by viewModel.onlineTags.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedTag by remember { mutableStateOf<String?>(null) }
+    var showTagDrawer by remember { mutableStateOf(false) }
 
     // 初始加载 (Refresh)
     LaunchedEffect(Unit) {
         viewModel.fetchOnlineLibraries(isRefresh = true)
+        viewModel.fetchOnlineTags()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column {
-             if (isLoading) {
-                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-             }
-             
-             // Logs
-             if (importLogs.isNotEmpty() && isLoading) {
-                 Text(
-                     text = importLogs.lastOrNull() ?: "",
-                     modifier = Modifier.padding(8.dp),
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.primary
-                 )
-             }
-
-             if (onlineLibraries.isEmpty() && !isLoading) {
-                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("暂无在线词库或加载失败")
-                        Button(onClick = { viewModel.fetchOnlineLibraries(isRefresh = true) }, modifier = Modifier.padding(top = 8.dp)) {
-                            Text("重试")
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Tag Drawer (Simple visibility toggle for now, or use ModalDrawer)
+            if (showTagDrawer) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(200.dp)
+                        .padding(end = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("标签筛选", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        LazyColumn {
+                            item {
+                                FilterChip(
+                                    selected = selectedTag == null,
+                                    onClick = { 
+                                        selectedTag = null
+                                        viewModel.searchOnlineLibraries(searchQuery, null)
+                                        showTagDrawer = false
+                                    },
+                                    label = { Text("全部") }
+                                )
+                            }
+                            items(onlineTags) { (tag, count) ->
+                                FilterChip(
+                                    selected = selectedTag == tag,
+                                    onClick = { 
+                                        selectedTag = tag 
+                                        viewModel.searchOnlineLibraries(searchQuery, tag)
+                                        showTagDrawer = false
+                                    },
+                                    label = { Text("$tag ($count)") }
+                                )
+                            }
                         }
-                     }
-                 }
-             } else {
-                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                     items(onlineLibraries.size) { index ->
-                         val lib = onlineLibraries[index]
-                         OnlineLibraryItem(
-                             library = lib,
-                             onDownload = { viewModel.downloadAndImportLibrary(lib) }
-                         )
-                         
-                         // 简单的加载更多触发机制：当滑动到倒数第3个时触发加载
-                         if (index >= onlineLibraries.size - 3 && !isLoading) {
-                             LaunchedEffect(Unit) {
-                                 viewModel.loadMoreOnlineLibraries()
-                             }
-                         }
-                     }
-                     
-                     // 底部加载指示器
-                     if (isLoading && onlineLibraries.isNotEmpty()) {
-                         item {
-                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                             }
-                         }
-                     }
-                 }
-             }
+                    }
+                }
+            }
+
+            // Main Content
+            Column(modifier = Modifier.weight(1f)) {
+                // Search Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { showTagDrawer = !showTagDrawer }) {
+                        Icon(Icons.Default.Menu, "Tags")
+                    }
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { 
+                            searchQuery = it
+                            // Debounce could be added here
+                        },
+                        placeholder = { Text("搜索词库...") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.searchOnlineLibraries(searchQuery, selectedTag) }) {
+                                Icon(Icons.Default.Search, "Search")
+                            }
+                        }
+                    )
+                }
+                
+                // Selected Tag Indicator
+                if (selectedTag != null) {
+                    AssistChip(
+                        onClick = { 
+                            selectedTag = null
+                            viewModel.searchOnlineLibraries(searchQuery, null)
+                        },
+                        label = { Text("标签: $selectedTag") },
+                        trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+
+                if (isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                
+                // Logs
+                if (importLogs.isNotEmpty() && isLoading) {
+                    Text(
+                        text = importLogs.lastOrNull() ?: "",
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (onlineLibraries.isEmpty() && !isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                           Text("暂无在线词库或加载失败")
+                           Button(onClick = { viewModel.fetchOnlineLibraries(isRefresh = true) }, modifier = Modifier.padding(top = 8.dp)) {
+                               Text("重试")
+                           }
+                        }
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(onlineLibraries.size) { index ->
+                            val lib = onlineLibraries[index]
+                            OnlineLibraryItem(
+                                library = lib,
+                                onDownload = { viewModel.downloadAndImportLibrary(lib) }
+                            )
+                            
+                            // 简单的加载更多触发机制：当滑动到倒数第3个时触发加载
+                            if (index >= onlineLibraries.size - 3 && !isLoading) {
+                                LaunchedEffect(Unit) {
+                                    viewModel.loadMoreOnlineLibraries()
+                                }
+                            }
+                        }
+                        
+                        // 底部加载指示器
+                        if (isLoading && onlineLibraries.isNotEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -282,6 +374,21 @@ fun OnlineLibraryItem(library: OnlineLibrary, onDownload: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 3
             )
+            
+            // Tags
+            if (library.tags.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    library.tags.forEach { tag ->
+                        SuggestionChip(
+                            onClick = {},
+                            label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
+                            modifier = Modifier.padding(end = 4.dp).height(24.dp)
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "By: ${library.author}", 
@@ -303,9 +410,10 @@ fun OnlineLibraryItem(library: OnlineLibrary, onDownload: () -> Unit) {
 }
 
 @Composable
-fun UploadLibraryDialog(count: Int, onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+fun UploadLibraryDialog(count: Int, onDismiss: () -> Unit, onConfirm: (String, String, List<String>) -> Unit) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var tagsInput by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -327,11 +435,25 @@ fun UploadLibraryDialog(count: Int, onDismiss: () -> Unit, onConfirm: (String, S
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = tagsInput,
+                    onValueChange = { tagsInput = it },
+                    label = { Text("标签 (逗号分隔)") },
+                    placeholder = { Text("例如: 雅思, 听力, 2024") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { if (name.isNotBlank()) onConfirm(name, description) },
+                onClick = { 
+                    if (name.isNotBlank()) {
+                        val tags = tagsInput.split(",", "，").map { it.trim() }.filter { it.isNotBlank() }
+                        onConfirm(name, description, tags) 
+                    }
+                },
                 enabled = name.isNotBlank()
             ) {
                 Text("上传")

@@ -965,11 +965,49 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
     private var currentPage = 0
     private var totalPages = 1
     private var isLoadingMore = false
+    private var currentSearchQuery: String? = null
+    private var currentSearchTag: String? = null
+
+    // Search and Filter State
+    private val _onlineTags = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
+    val onlineTags: StateFlow<List<Pair<String, Int>>> = _onlineTags.asStateFlow()
+
+    fun fetchOnlineTags() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val request = Request.Builder().url("https://mag.upxuu.com/library/file/tags.json?t=${System.currentTimeMillis()}").build()
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body?.string()
+                    val type = object : TypeToken<List<Map<String, Any>>>() {}.type
+                    val list = Gson().fromJson<List<Map<String, Any>>>(json, type) ?: emptyList()
+                    
+                    val tags = list.mapNotNull { 
+                        val name = it["name"] as? String
+                        val count = (it["count"] as? Double)?.toInt() ?: 0
+                        if (name != null) name to count else null
+                    }
+                    _onlineTags.value = tags
+                }
+            } catch (e: Exception) {
+                LogUtil.logError("Network", "Fetch Tags Failed", e)
+            }
+        }
+    }
+
+    fun searchOnlineLibraries(query: String? = null, tag: String? = null) {
+        currentSearchQuery = query
+        currentSearchTag = tag
+        fetchOnlineLibraries(isRefresh = true)
+    }
 
     fun fetchOnlineLibraries(isRefresh: Boolean = false) {
         if (isRefresh) {
             currentPage = 0
-            totalPages = 1
+            // Reset totalPages temporarily until we fetch num.json again (if needed) or we just iterate
+            // If searching, we don't know total pages of result, so we iterate until end of index files.
+            // But to keep it simple, we rely on num.json for MAX pages to iterate.
+            totalPages = 1 
             _onlineLibraries.value = emptyList()
         }
         
@@ -980,37 +1018,69 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
             isLoadingMore = true
             
             try {
-                // 1. First fetch metadata if initial load
+                // 1. Fetch metadata to know global total pages (if we haven't or refreshed)
                 if (currentPage == 0) {
-                    val numRequest = Request.Builder().url("https://mag.upxuu.com/library/num.json?t=${System.currentTimeMillis()}").build()
                     try {
+                        val numRequest = Request.Builder().url("https://mag.upxuu.com/library/num.json?t=${System.currentTimeMillis()}").build()
                         val numResponse = client.newCall(numRequest).execute()
                         if (numResponse.isSuccessful) {
-                            val numJson = numResponse.body()?.string()
+                            val numJson = numResponse.body?.string()
                             val numObj = JSONObject(numJson)
                             totalPages = numObj.optInt("totalPages", 1)
                         }
                     } catch (e: Exception) {
                         LogUtil.logError("Network", "Fetch Num Failed", e)
-                        // Fallback to 1 page if metadata fails
                     }
                 }
 
-                // 2. Fetch current page index
-                val indexUrl = "https://mag.upxuu.com/library/index_${currentPage}.json?t=${System.currentTimeMillis()}"
-                val request = Request.Builder().url(indexUrl).build()
-                val response = client.newCall(request).execute()
+                // 2. Iterate pages until we find enough items or reach end
+                // If searching/filtering, we might need to fetch multiple index pages to fill one UI page.
+                // For simplicity, we fetch one index page, filter it, and append. 
+                // If result is empty, user hits "Load More" again or we auto-load?
+                // Auto-load logic: If filtered result < 10 AND has more pages, fetch next immediately.
                 
-                if (response.isSuccessful) {
-                    val json = response.body()?.string()
-                    val type = object : TypeToken<List<OnlineLibrary>>() {}.type
-                    val list = Gson().fromJson<List<OnlineLibrary>>(json, type) ?: emptyList()
+                var foundCount = 0
+                val BATCH_SIZE = 10
+                val newItems = mutableListOf<OnlineLibrary>()
+                
+                // Safety loop limit to prevent infinite network calls
+                var attempts = 0
+                val MAX_ATTEMPTS = 5 
+
+                while (foundCount < BATCH_SIZE && currentPage < totalPages && attempts < MAX_ATTEMPTS) {
+                    val indexUrl = "https://mag.upxuu.com/library/index_${currentPage}.json?t=${System.currentTimeMillis()}"
+                    val request = Request.Builder().url(indexUrl).build()
+                    val response = client.newCall(request).execute()
                     
-                    _onlineLibraries.value = _onlineLibraries.value + list
-                    currentPage++
-                } else {
-                     LogUtil.logError("Network", "Fetch Online Page $currentPage Failed: ${response.code()}", null)
+                    if (response.isSuccessful) {
+                        val json = response.body?.string()
+                        val type = object : TypeToken<List<OnlineLibrary>>() {}.type
+                        val list = Gson().fromJson<List<OnlineLibrary>>(json, type) ?: emptyList()
+                        
+                        // Filter locally
+                        val filtered = list.filter { lib ->
+                            val matchesQuery = currentSearchQuery.isNullOrBlank() || 
+                                    lib.name.contains(currentSearchQuery!!, ignoreCase = true) || 
+                                    lib.description.contains(currentSearchQuery!!, ignoreCase = true)
+                            
+                            val matchesTag = currentSearchTag.isNullOrBlank() || 
+                                    lib.tags.any { it.equals(currentSearchTag, ignoreCase = true) }
+                                    
+                            matchesQuery && matchesTag
+                        }
+                        
+                        newItems.addAll(filtered)
+                        foundCount += filtered.size
+                        currentPage++ // Move to next index page
+                    } else {
+                        // Failed to fetch this page, maybe break or skip
+                        currentPage++
+                    }
+                    attempts++
                 }
+                
+                _onlineLibraries.value = _onlineLibraries.value + newItems
+                
             } catch (e: Exception) {
                 e.printStackTrace()
                 LogUtil.logError("Network", "Fetch Online Error: ${e.message}", e)
@@ -1025,7 +1095,7 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
         fetchOnlineLibraries(isRefresh = false)
     }
 
-    fun uploadLibraryPackage(name: String, description: String, libraryIds: List<Int>) {
+    fun uploadLibraryPackage(name: String, description: String, tags: List<String>, libraryIds: List<Int>) {
         viewModelScope.launch(Dispatchers.IO) {
             _isNetworkLoading.value = true
             _importLogs.value = listOf("正在上传词库: $name...")
@@ -1041,6 +1111,10 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                  jsonBody.put("description", description)
                  jsonBody.put("contentBase64", base64Content)
                  
+                 val tagsArray = org.json.JSONArray()
+                 tags.forEach { tagsArray.put(it) }
+                 jsonBody.put("tags", tagsArray)
+                 
                  val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonBody.toString())
                  
                  val request = Request.Builder()
@@ -1052,10 +1126,10 @@ class LibraryViewModel(val wordDao: WordDao, private val prefs: SharedPreference
                  if (response.isSuccessful) {
                      _importLogs.value = listOf("✅ 上传成功！等待审核/更新。")
                      // Refresh online list?
-                     fetchOnlineLibraries()
+                     fetchOnlineLibraries(isRefresh = true)
                  } else {
-                     val err = response.body()?.string()
-                     _importLogs.value = listOf("❌ 上传失败 (${response.code()}): $err")
+                     val err = response.body?.string()
+                     _importLogs.value = listOf("❌ 上传失败 (${response.code}): $err")
                  }
             } catch (e: Exception) {
                  _importLogs.value = listOf("❌ 上传错误: ${e.message}")
