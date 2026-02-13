@@ -159,10 +159,11 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = modelName,
-                onValueChange = { modelName = it },
-                label = { Text("模型名称") },
+                onValueChange = { },
+                label = { Text("模型名称 (统一配置)") },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                singleLine = true
+                singleLine = true,
+                enabled = false
             )
             
             // ... (Rest of UI similar to before)
