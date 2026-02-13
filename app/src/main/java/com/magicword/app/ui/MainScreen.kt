@@ -136,7 +136,7 @@ fun MainScreen() {
                     if (isDownloading) {
                         androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(16.dp))
                         androidx.compose.material3.LinearProgressIndicator(
-                            progress = { downloadProgress / 100f },
+                            progress = downloadProgress / 100f,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text("Downloading... $downloadProgress%")
