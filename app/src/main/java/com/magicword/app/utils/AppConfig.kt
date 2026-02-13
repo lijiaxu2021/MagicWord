@@ -33,6 +33,10 @@ object AppConfig {
         userPersona = prefs.getString(KEY_USER_PERSONA, "") ?: ""
         saveLocationId = prefs.getInt(KEY_SAVE_LOCATION, -1)
     }
+
+    fun reload(context: Context) {
+        init(context)
+    }
     
     fun saveConfig(newApiKey: String, newModelName: String, newServerUrl: String?, newPersona: String?, newSaveLocationId: Int?) {
         apiKey = newApiKey
