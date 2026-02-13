@@ -1,105 +1,217 @@
-# EasyWord (MagicWord)
+# MagicWord (EasyWord)
 
-> 🚀 **一款基于 Jetpack Compose 和 AI 驱动的现代化 Android 背词应用。**  
-> 沉浸式学习体验，智能语义分析，让记单词变得简单而高效。
+> 🚀 **全栈式 AI 背词解决方案**
+>
+> 这是一个包含 Android 客户端、Cloudflare 服务端和 Git 数据仓库的完整生态系统。不仅是一个 App，更是一个去中心化的词库共享平台。
 
-![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.19-blue.svg)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Cloudflare%20%7C%20GitHub-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Status](https://img.shields.io/badge/status-Active-success.svg)
-
-[English Version](README_EN.md) | [中文版](README.md)
 
 ---
 
-## 📖 简介
+## 📚 目录
 
-EasyWord 是一款结合了 **AI 智能**与 **SM-2 记忆算法**的背单词应用。它旨在帮助用户高效地构建词汇量，并通过科学的复习计划防止遗忘。版本 v0.0.3 引入了自动更新和更多人性化功能。
-
-## ✨ 核心功能
-
-### 1. 沉浸式单词学习 (Words Tab)
-- **全屏卡片设计**：极简风格，专注于记忆本身。
-- **手势交互**：左右滑动切换，点击查看详细解析。
-- **AI 记忆法**：提供语境化的例句和词根词缀助记。
-
-### 2. 智能 AI 查词 (Search Tab)
-- **精准查询**：调用 Qwen-2.5-7B-Instruct 模型深度解析。
-- **一键录入**：查词结果直接存入当前词库，自动去重。
-
-### 3. AI 批量导入 (Library Tab)
-- **长文本提取**：输入文章/段落，AI 自动提取生词和短语。
-- **智能去重**：自动过滤已存在的单词。
-
-### 4. 单词表 (WordList Tab) [New]
-- **自定义列表**：创建个性化单词表（如“考研核心词”）。
-- **多视图切换**：支持列表模式和紧凑表格模式（记忆状态持久化）。
-- **快速跳转**：双击单词直接跳转至卡片学习模式。
-
-### 5. 测试与复习 (Test Tab)
-- **选择题模式**：SM-2 算法驱动的复习测试。
-- **拼写模式**：强化拼写记忆。
-- **数据统计**：记录每次测试的正确率和详情。
-
-### 7. 在线词库市场 [New]
-- **云端同步**：浏览并下载社区共享的精选词库。
-- **一键分享**：将本地词库打包上传，与他人分享您的学习成果。
-- **自动更新**：在线词库索引通过 GitHub Actions 自动维护，实时获取最新资源。
+1. [项目架构 (Architecture)](#-项目架构-architecture)
+2. [Android 客户端详解](#-android-客户端详解)
+3. [服务端 (Cloudflare Worker)](#-服务端-cloudflare-worker)
+4. [数据仓库与协议 (Data Warehouse)](#-数据仓库与协议-data-warehouse)
+5. [在线词库 API 规范](#-在线词库-api-规范-protocol)
+6. [开发与部署](#-开发与部署)
 
 ---
 
-## 🏗 项目结构
+## 🏗 项目架构 (Architecture)
 
-项目采用标准的 Android MVVM 架构：
+本项目由三个核心部分组成，协同工作以提供完整的在线词库体验：
 
-```
-com.magicword.app
-├── MainActivity.kt          # 应用入口
-├── data                     # 数据层 (Room Database)
-├── network                  # 网络层 (Retrofit & AI API)
-├── ui                       # UI 层 (Jetpack Compose)
-│   ├── MainScreen.kt        # 主界面
-│   ├── WordsScreen.kt       # 单词卡片
-│   ├── LibraryManagerScreen.kt # 词库管理 (本地/在线)
-│   ├── SearchScreen.kt      # AI 搜词
-│   ├── TestScreen.kt        # 测试
-│   ├── WordListScreen.kt    # 单词表
-│   ├── SettingsScreen.kt    # 设置
-│   ├── AboutScreen.kt       # 关于
-│   └── LibraryViewModel.kt  # 核心状态管理
-├── utils                    # 工具类 (UpdateManager, LogUtil)
-└── worker                   # 后台任务
+1.  **Android Client (`easyword`)**: 
+    - 用户界面与核心逻辑。负责单词记忆、测试、本地管理以及与服务端的交互。
+2.  **Server Proxy (`cf`)**: 
+    - 部署在 Cloudflare Workers 上。作为中转站，代理客户端对 GitHub Raw 数据的请求（解决 CORS 和网络问题），并处理词库上传请求（写入 GitHub 仓库）。同时提供一个轻量级的管理后台。
+3.  **Data Warehouse (`magicwordfile`)**: 
+    - 一个独立的 GitHub 仓库。存储所有用户上传的词库文件。利用 GitHub Actions 自动生成分页索引 (`index_X.json`) 和元数据 (`num.json`)。
+
+```mermaid
+graph TD
+    Client[Android App] -->|Fetch Index/File| Worker[Cloudflare Worker]
+    Client -->|Upload Library| Worker
+    Worker -->|Proxy Request| GitHubRaw[GitHub Raw Content]
+    Worker -->|Git Push| GitHubRepo[Magicwordfile Repo]
+    GitHubRepo -->|Action: Update Index| GitHubRepo
 ```
 
 ---
 
-## 🚀 快速开始
+## 📱 Android 客户端详解
 
-### 安装步骤
+基于 **Jetpack Compose** + **MVVM** + **Kotlin Coroutines** 构建的现代化 Android 应用。
 
-1.  **下载 APK**
-    - **最新版本下载**: [MagicWord.apk (国内加速)](https://mag.upxuu.com/lijiaxu2011/MagicWord/releases/latest/download/MagicWord.apk)
-    - **所有版本列表**: [查看发布页 (国内加速)](https://mag.upxuu.com/lijiaxu2011/MagicWord/releases)
-    > 注意：如果直接下载链接无法访问，请点击“所有版本列表”选择最新版本下载。
+### 核心模块
 
-2.  **配置 API Key**
-    在“设置”页面填入您的 SiliconFlow API Key 即可开始使用 AI 功能。
+#### 1. 词库管理 (Library Manager) - **[核心升级]**
+*   **本地词库**: 支持创建、删除、重命名本地词库。
+*   **在线词库 (Online Library)**:
+    *   **分页加载**: 客户端读取 `num.json` 获取总页数，按需加载 `index_X.json`。
+    *   **智能搜索**: 支持按“关键词”和“标签 (Tag)”组合搜索。客户端自动遍历最近的索引页进行过滤。
+    *   **标签系统**: 左侧侧边栏展示云端热门标签 (`tags.json`)，点击即可筛选。
+    *   **上传分享**: 支持将本地词库打包上传，上传时可添加多个标签（如 `雅思`, `听力`）。
+*   **导入导出**: 支持 JSON 格式的批量导入导出。
+
+#### 2. 沉浸式学习 (Study & Words)
+*   **SM-2 算法**: 内置 SuperMemo-2 记忆算法，根据用户对单词的熟悉程度（0-5评分）自动安排下一次复习时间。
+*   **AI 辅助**: 集成大模型 API (Qwen/SiliconFlow)，提供单词的深度解析、助记法和例句。
+*   **TTS 发音**: 调用系统 TTS 引擎朗读单词和例句。
+
+#### 3. 测试系统 (Test)
+*   **多模式**: 支持“选择题”和“拼写题”。
+*   **错题本**: 自动记录错题，影响 SM-2 权重。
+
+#### 4. 系统设置 (Settings)
+*   **自动更新**: 启动时检查 GitHub Release (或 `notice.json`)，支持应用内自动下载并安装 APK。
+*   **公告通知**: 接收服务端发布的动态通知 (`notice.json`)，支持弹窗展示和“不再提示”。
+
+### 关键技术实现
+*   **网络层**: Retrofit + OkHttp。对 `Response.body` 的访问进行了严格封装，兼容不同版本的 OkHttp。
+*   **数据层**: Room Database。`WordDao` 提供全量的增删改查和全文检索 (`FTS4`)。
+*   **并发处理**: 使用 `Kotlin Flow` 和 `Coroutines` 处理高并发网络请求（如批量导入时的 AI 提取）。
 
 ---
 
-## ⚙️ 构建与更新
+## ☁️ 服务端 (Cloudflare Worker)
 
-本项目使用 GitHub Actions 自动构建 Release 版本。
+位于 `cf/` 目录，部署为 `magicword-proxy`。
 
-- **版本号管理**：版本号由 `app/build.gradle.kts` 控制，自动同步到 Release Tag。
-- **自动更新**：应用内置 `UpdateManager`，通过反代服务检查更新，确保国内网络可用。
+### 功能职责
+1.  **CORS 代理**: 允许 Web 和 App 跨域访问 GitHub Raw 数据。
+2.  **上传网关**: 接收客户端上传的 JSON 数据，将其解码并 commit 到 `magicwordfile` 仓库。
+3.  **管理后台**: 提供 `/upxuu` 路径的 Web 界面，用于管理员审核、删除违规词库、发布系统通知。
+
+### 部署配置
+*   **环境**: Cloudflare Workers
+*   **KV 存储**: 用于存储管理员 Session 或临时配置。
+*   **环境变量**: 需配置 `GITHUB_TOKEN`, `REPO_OWNER`, `REPO_NAME` 等。
 
 ---
 
-## 👥 作者与贡献者
+## 📦 数据仓库与协议 (Data Warehouse)
 
-- **Author**: [lijiaxu2011](https://github.com/lijiaxu2011)
-- **Contributor**: upxuu
+位于 `magicwordfile` 仓库。这是系统的“数据库”。
 
-## 📄 License
+### 目录结构
+```text
+magicwordfile/
+├── .github/workflows/update_index.yml  # 核心自动化脚本
+├── index_0.json                        # 分页索引 (第0页，最新)
+├── index_1.json                        # 分页索引 (第1页)
+├── num.json                            # 元数据 (总页数、总条数)
+├── tags.json                           # 标签统计 (热门标签)
+├── 1770900184827/                      # 词库文件夹 (以时间戳命名)
+│   ├── info.json                       # 词库详情 (Name, Desc, Tags)
+│   └── library.json                    # 词库实体数据
+└── ...
+```
 
-本项目采用 [MIT License](LICENSE) 许可证。
+### 自动化工作流 (GitHub Actions)
+每次有新词库上传（Push）时，`update_index.yml` 会自动触发：
+1.  扫描所有时间戳文件夹。
+2.  读取 `info.json`，提取元数据和标签。
+3.  按时间倒序排列。
+4.  **分页生成**: 每 10 个词库生成一个 `index_X.json`。
+5.  **生成元数据**: 更新 `num.json` 中的 `totalPages`。
+6.  **生成标签**: 统计所有 tags 并生成 `tags.json`。
+7.  Commit 并 Push 回仓库。
+
+---
+
+## 🔗 在线词库 API 规范 (Protocol)
+
+客户端与服务端交互的标准化协议。所有请求通过 Cloudflare Proxy 转发。
+
+### 1. 获取元数据
+*   **URL**: `GET /library/file/num.json`
+*   **Response**:
+    ```json
+    {
+      "totalPages": 5,
+      "totalItems": 42,
+      "pageSize": 10,
+      "lastUpdated": 1709823456789
+    }
+    ```
+
+### 2. 获取索引页
+*   **URL**: `GET /library/file/index_{page}.json` (e.g., `index_0.json`)
+*   **Response**:
+    ```json
+    [
+      {
+        "id": "1770900184827",
+        "name": "雅思核心词汇",
+        "description": "包含3000个高频词...",
+        "timestamp": 1770900184827,
+        "author": "User",
+        "tags": ["雅思", "英语", "考试"],
+        "downloadUrl": "https://.../1770900184827/library.json"
+      }
+    ]
+    ```
+
+### 3. 获取标签列表
+*   **URL**: `GET /library/file/tags.json`
+*   **Response**:
+    ```json
+    [
+      { "name": "雅思", "count": 12 },
+      { "name": "考研", "count": 8 }
+    ]
+    ```
+
+### 4. 上传词库
+*   **URL**: `POST /library/upload`
+*   **Body**:
+    ```json
+    {
+      "name": "我的词库",
+      "description": "描述...",
+      "tags": ["Tag1", "Tag2"],
+      "contentBase64": "ey..." // Base64 编码的 library.json 内容
+    }
+    ```
+
+### 5. 系统通知
+*   **URL**: `GET /notice.json`
+*   **Response**:
+    ```json
+    {
+      "title": "维护通知",
+      "content": "服务器将于今晚维护...",
+      "versionCode": 19, // 最低兼容版本或当前最新版本
+      "timestamp": 1709823456789
+    }
+    ```
+
+---
+
+## 🛠 开发与部署
+
+### 客户端 (Android)
+1.  打开 `easyword` 目录。
+2.  配置 `local.properties` (可选 API Key)。
+3.  运行 `./gradlew assembleRelease`。
+
+### 服务端 (Worker)
+1.  进入 `cf` 目录。
+2.  安装依赖: `npm install`。
+3.  配置 `wrangler.toml`。
+4.  部署: `npx wrangler deploy`。
+
+### 数据仓库
+1.  Fork `magicwordfile` 仓库。
+2.  在服务端配置中指向你的仓库地址。
+3.  确保 GitHub Actions 权限已开启 (Read and Write permissions)。
+
+---
+
+**MagicWord Team**  
+*致力于打造最开放、最智能的背词工具。*

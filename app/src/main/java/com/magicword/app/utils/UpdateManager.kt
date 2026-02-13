@@ -41,7 +41,7 @@ object UpdateManager {
                 
                 if (!response.isSuccessful) return@withContext null
                 
-                val bodyStr = response.body?.string() ?: return@withContext null
+                val bodyStr = response.body()?.string() ?: return@withContext null
                 val release = Gson().fromJson(bodyStr, ReleaseResponse::class.java)
                 
                 val latestVersion = release.tag_name.removePrefix("v")
@@ -89,7 +89,7 @@ object UpdateManager {
                 if (!response.isSuccessful) return@withContext false
                 
                 // Strictly use body() method to avoid Kotlin property access issues with package-private fields in some OkHttp versions
-                val body = response.body
+                val body = response.body()
                 if (body == null) return@withContext false
                 val totalLength = body.contentLength()
                 
