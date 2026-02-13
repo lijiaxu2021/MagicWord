@@ -186,6 +186,7 @@ fun LibraryItem(
     Divider()
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnlineLibraryTab(viewModel: LibraryViewModel) {
     val onlineLibraries by viewModel.onlineLibraries.collectAsState()

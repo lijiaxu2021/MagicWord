@@ -111,8 +111,8 @@ fun MainScreen() {
                 showNoticeDialog = false 
                 com.magicword.app.utils.NoticeManager.markNoticeAsRead(context, currentNotice!!.id)
             },
-            title = { Text(currentNotice!!.title) },
-            text = { Text(currentNotice!!.content) },
+            title = { Text(currentNotice!!.title ?: "") },
+            text = { Text(currentNotice!!.content ?: "") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showNoticeDialog = false
