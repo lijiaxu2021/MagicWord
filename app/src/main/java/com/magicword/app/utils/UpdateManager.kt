@@ -36,30 +36,34 @@ object UpdateManager {
     suspend fun checkUpdate(currentVersion: String): UpdateInfo? {
         return withContext(Dispatchers.IO) {
             try {
-                val request = Request.Builder().url(LATEST_RELEASE_URL).build()
+                // Use notice.json for version check as it is more reliable and faster
+                // https://mag.upxuu.com/notice.json
+                val noticeUrl = "$PROXY_BASE_URL/notice.json?t=${System.currentTimeMillis()}"
+                val request = Request.Builder().url(noticeUrl).build()
                 val response = client.newCall(request).execute()
                 
                 if (!response.isSuccessful) return@withContext null
                 
-                val bodyStr = response.body()?.string() ?: return@withContext null
-                val release = Gson().fromJson(bodyStr, ReleaseResponse::class.java)
+                val bodyStr = response.body?.string() ?: return@withContext null
+                val notice = Gson().fromJson(bodyStr, NoticeResponse::class.java)
                 
-                val latestVersion = release.tag_name.removePrefix("v")
-                val hasUpdate = compareVersions(latestVersion, currentVersion) > 0
+                // Compare version codes if available, or fallback to name
+                // Current app version code is available in BuildConfig.VERSION_CODE
+                val currentCode = com.magicword.app.BuildConfig.VERSION_CODE
+                val hasUpdate = notice.versionCode > currentCode
                 
-                // Find APK asset
-                val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                val downloadUrl = if (apkAsset != null) {
-                    // Use Raw File Proxy for direct download
-                    "$PROXY_BASE_URL/MagicWordLatest.apk"
-                } else ""
+                val downloadUrl = "$PROXY_BASE_URL/MagicWordLatest.apk"
 
-                UpdateInfo(
-                    version = latestVersion,
-                    downloadUrl = downloadUrl,
-                    releaseNotes = release.body,
-                    hasUpdate = hasUpdate
-                )
+                if (hasUpdate) {
+                    UpdateInfo(
+                        version = "New Version (${notice.versionCode})",
+                        downloadUrl = downloadUrl,
+                        releaseNotes = notice.content ?: "New update available",
+                        hasUpdate = true
+                    )
+                } else {
+                     null
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -67,18 +71,12 @@ object UpdateManager {
         }
     }
 
-    private fun compareVersions(v1: String, v2: String): Int {
-        val parts1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
-        val parts2 = v2.split(".").map { it.toIntOrNull() ?: 0 }
-        val length = maxOf(parts1.size, parts2.size)
-
-        for (i in 0 until length) {
-            val p1 = parts1.getOrElse(i) { 0 }
-            val p2 = parts2.getOrElse(i) { 0 }
-            if (p1 != p2) return p1 - p2
-        }
-        return 0
-    }
+    private data class NoticeResponse(
+        val title: String?,
+        val content: String?,
+        val versionCode: Int,
+        val timestamp: Long
+    )
 
     suspend fun downloadApk(url: String, destination: File, onProgress: (Int) -> Unit): Boolean {
         return withContext(Dispatchers.IO) {
@@ -89,7 +87,8 @@ object UpdateManager {
                 if (!response.isSuccessful) return@withContext false
                 
                 // Strictly use body() method to avoid Kotlin property access issues with package-private fields in some OkHttp versions
-                val body = response.body() ?: return@withContext false
+                val body = response.body
+                if (body == null) return@withContext false
                 val totalLength = body.contentLength()
                 
                 body.byteStream().use { input ->
