@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object SyncClient {
-    private const val BASE_URL = "https://upxuu.pythonanywhere.com/"
+    private const val BASE_URL = "https://mag.upxuu.com/"
 
     val api: MagicWordApi by lazy {
         Retrofit.Builder()

@@ -2,15 +2,29 @@ package com.magicword.app.network
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.GET
-import com.magicword.app.data.Word
+import retrofit2.http.POST
+import retrofit2.http.Body
 
-data class ServerInitConfig(
-    @SerializedName("api_key") val apiKey: String,
-    @SerializedName("model_name") val modelName: String,
-    @SerializedName("default_library_url") val defaultLibraryUrl: String?
+data class ServerInitResponse(
+    @SerializedName("defaultLibraryUrl") val defaultLibraryUrl: String?
+)
+
+data class VerifyKitRequest(
+    val kitKey: String
+)
+
+data class VerifyKitResponse(
+    val valid: Boolean,
+    val apiKey: String?,
+    val model: String?,
+    val baseUrl: String?,
+    val error: String?
 )
 
 interface ServerApi {
-    @GET("api/init-config")
-    suspend fun getInitConfig(): ServerInitConfig
+    @GET("api/init")
+    suspend fun getInitConfig(): ServerInitResponse
+
+    @POST("api/verify-kit")
+    suspend fun verifyKit(@Body request: VerifyKitRequest): VerifyKitResponse
 }
