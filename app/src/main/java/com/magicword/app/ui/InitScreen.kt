@@ -223,11 +223,13 @@ fun InitScreen(onInitSuccess: () -> Unit) {
                 Text("手动配置", style = MaterialTheme.typography.titleMedium)
                 // ... (Keep existing manual config fields for advanced users)
                 var manualApiKey by remember { mutableStateOf("") }
+                var manualModelName by remember { mutableStateOf("Qwen/Qwen2.5-7B-Instruct") }
                 
                 OutlinedTextField(value = manualApiKey, onValueChange = { manualApiKey = it }, label = { Text("API Key") })
+                OutlinedTextField(value = manualModelName, onValueChange = { manualModelName = it }, label = { Text("Model Name") })
                 
                 Button(onClick = { 
-                    AppConfig.saveConfig(manualApiKey, "Qwen/Qwen2.5-7B-Instruct", null, null, null)
+                    AppConfig.saveConfig(manualApiKey, manualModelName, null, null, null)
                     onInitSuccess() 
                 }) { Text("保存") }
                 
