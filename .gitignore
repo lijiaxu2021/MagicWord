@@ -17,5 +17,16 @@ local.properties
 .idea
 *.jks
 *.keystore
-
 keystore_b64.txt
+
+# Log files
+*.log
+error.txt
+debug.log
+chat.txt
+
+# APK files
+
+# Python scripts
+*.py
+!gradlew

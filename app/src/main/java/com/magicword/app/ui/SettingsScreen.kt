@@ -240,7 +240,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToLogs: () -> Unit, onNavigateT
                 headlineContent = { Text("GitHub 仓库") },
                 supportingContent = { Text("开源项目主页") },
                 modifier = Modifier.clickable { 
-                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/lijiaxu2021/MagicWord")))
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/ImUpXuu/MagicWord")))
                 },
                 trailingContent = { Icon(Icons.Default.ArrowBack, "Link", modifier = Modifier.rotate(180f)) }
             )
@@ -285,7 +285,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("关于 MagicWord") },
-        text = { Column { Text("MagicWord v1.0.0\nBy lijiaxu2011 & UpXuu") } },
+        text = { Column { Text("MagicWord v1.0.0\nBy ImUpXuu") } },
         confirmButton = { TextButton(onClick = onDismiss) { Text("关闭") } }
     )
 }

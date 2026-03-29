@@ -6,7 +6,7 @@
 // --- 配置区域 (Configuration) ---
 
 // 1. GitHub 仓库信息
-const GH_USERNAME = "lijiaxu2021";
+const GH_USERNAME = "ImUpXuu";
 const GH_REPO_APP = "MagicWord";       // 主项目仓库 (存放 APK, notice.json)
 const GH_REPO_DATA = "magicwordfile";  // 数据仓库 (存放词库文件)
 const GH_BRANCH = "main";

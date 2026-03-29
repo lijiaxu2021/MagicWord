@@ -15,8 +15,8 @@ import com.magicword.app.BuildConfig
 
 object UpdateManager {
     private const val PROXY_BASE_URL = "https://mag.upxuu.com"
-    private const val GITHUB_OWNER = "lijiaxu2021" // Replace with actual owner
-    private const val GITHUB_REPO = "MagicWord" // Replace with actual repo name
+    private const val GITHUB_OWNER = "ImUpXuu"
+    private const val GITHUB_REPO = "MagicWord"
     
     // API endpoint via proxy: https://mag.upxuu.com/api/repos/{owner}/{repo}/releases/latest
     private val LATEST_RELEASE_URL = "$PROXY_BASE_URL/api/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"

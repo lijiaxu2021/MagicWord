@@ -76,9 +76,8 @@ com.magicword.app
 ### Installation Steps
 
 1.  **Download APK**
-    - **Latest Version**: [MagicWord.apk (Proxy)](https://mag.upxuu.com/lijiaxu2011/MagicWord/releases/latest/download/MagicWord.apk)
-    - **All Releases**: [View Releases (Proxy)](https://mag.upxuu.com/lijiaxu2011/MagicWord/releases)
-    > Note: If the direct download link fails, please click "All Releases" to select the latest version manually.
+    - **Latest Version**: [MagicWord.apk](https://mag.upxuu.com/mw.apk)
+    > Note: Direct download link for the latest version.
 
 2.  **Configure API Key**
     Enter your SiliconFlow API Key in the "Settings" page to start using AI features.
@@ -96,8 +95,7 @@ This project uses GitHub Actions for automatic Release builds.
 
 ## 👥 Authors & Contributors
 
-- **Author**: [lijiaxu2011](https://github.com/lijiaxu2011)
-- **Contributor**: upxuu
+- **Author**: [ImUpXuu](https://github.com/ImUpXuu)
 
 ## 📄 License
 
